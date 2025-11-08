@@ -92,7 +92,7 @@ export default function AnalyzePage() {
       if (!code.trim()) return toast.error("Paste some Solidity first!");
       setLoading(true);
       NProgress.start();
-      const { data } = await axios.post("http://127.0.0.1:8000/analyze/", { code });
+      const { data } = await axios.post("https://aetherguard-api.onrender.com/analyze/", { code });
       setResult(data);
       toast.success("✅ Scan complete!");
     } catch (err) {
