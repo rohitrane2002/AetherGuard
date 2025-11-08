@@ -25,63 +25,22 @@ import "nprogress/nprogress.css";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-/* -------------------------------------------------------------------------- */
-/*                           🧩 WORKING PDF EXPORT                            */
-/* -------------------------------------------------------------------------- */
+/* ---------------------------- PDF export helper ---------------------------- */
 async function exportPdf(elementId: string) {
   const node = document.getElementById(elementId);
   if (!node) return toast.error("Result block not found");
 
-  try {
-    // html2canvas must capture a *visible* element on screen.
-    // We temporarily force width to screen width so chart renders fully.
-    const opts: any = {
-      backgroundColor: "#0d1117",
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      foreignObjectRendering: false,
-      removeContainer: true,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: document.documentElement.scrollWidth,
-      windowHeight: document.documentElement.scrollHeight,
-      logging: true,
-    };
-
-    // Clamp any oklab/color() backgrounds to flat dark gray
-    node.querySelectorAll("*").forEach((n: any) => {
-      const s = window.getComputedStyle(n);
-      if (
-        s.backgroundImage.includes("oklab") ||
-        s.backgroundImage.includes("color(")
-      ) {
-        n.style.backgroundImage = "none";
-        n.style.backgroundColor = "#0d1117";
-      }
-    });
-
-    const canvas = await html2canvas(node, opts);
-    const img = canvas.toDataURL("image/png", 1.0);
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pw = pdf.internal.pageSize.getWidth();
-    const ph = pdf.internal.pageSize.getHeight();
-    const ratio = canvas.width / canvas.height;
-    const imgW = pw - 20;
-    const imgH = imgW / ratio;
-    const posY = (ph - imgH) / 2;
-    pdf.addImage(img, "PNG", 10, posY, imgW, imgH);
-    pdf.save("aetherguard_report.pdf");
-    toast.success("📄 PDF downloaded!");
-  } catch (err: any) {
-    console.error("PDF error →", err);
-    toast.error("PDF generation failed — check console logs");
-  }
+  const canvas = await html2canvas(node, { backgroundColor: "#0d1117", scale: 2 });
+  const img = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pw = pdf.internal.pageSize.getWidth();
+  const ratio = canvas.width / canvas.height;
+  pdf.addImage(img, "PNG", 0, 10, pw, pw / ratio);
+  pdf.save("aetherguard_report.pdf");
+  toast.success("📄 PDF downloaded!");
 }
 
-/* -------------------------------------------------------------------------- */
-/*                             🧠  Analyzer Page                              */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ Analyzer Page ------------------------------ */
 export default function AnalyzePage() {
   const [code, setCode] = useState("");
   const [result, setResult] = useState<any>({});
@@ -92,32 +51,21 @@ export default function AnalyzePage() {
       if (!code.trim()) return toast.error("Paste some Solidity first!");
       setLoading(true);
       NProgress.start();
-      const { data } = await axios.post("https://aetherguard-api.onrender.com/analyze/", { code });
+
+      // ✅ your Render backend endpoint
+      const { data } = await axios.post(
+        "https://aetherguard-api.onrender.com/analyze/",
+        { code }
+      );
       setResult(data);
-      toast.success("✅ Scan complete!");
+      toast.success("✅ Scan complete!");
     } catch (err) {
       console.error(err);
-      toast.error("❌ Backend unreachable");
+      toast.error("❌ Backend unreachable");
     } finally {
       setLoading(false);
       NProgress.done();
     }
-  };
-
-  const handleCopy = () => {
-    if (!result.prediction) return toast.error("Run a scan first");
-    navigator.clipboard.writeText(JSON.stringify(result, null, 2));
-    toast("📋 Report copied!");
-  };
-
-  const handleText = () => {
-    if (!result.prediction) return toast.error("Run a scan first");
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "text/plain" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "aetherguard_report.txt";
-    a.click();
-    URL.revokeObjectURL(a.href);
   };
 
   const chart = {
@@ -145,10 +93,10 @@ export default function AnalyzePage() {
         className="mt-28 text-center space-y-4"
       >
         <h1 className="text-6xl font-extrabold bg-gradient-to-r from-fuchsia-500 via-violet-400 to-cyan-400 text-transparent bg-clip-text drop-shadow-lg">
-          AetherGuard Analyzer
+          AetherGuard Analyzer
         </h1>
         <p className="text-gray-400 max-w-2xl mx-auto text-sm">
-          Real‑time AI security scan for Solidity smart contracts
+          Real‑time AI security scan for Solidity smart contracts
         </p>
       </motion.div>
 
@@ -157,95 +105,45 @@ export default function AnalyzePage() {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="relative w-full max-w-5xl mt-10 mb-24 bg-white/5 border border-transparent rounded-3xl backdrop-blur-md p-8 shadow-[0_0_40px_rgba(255,255,255,0.07)] hover:border-fuchsia-400/40 hover:shadow-fuchsia-600/20 transition-all"
+        className="relative w-full max-w-5xl mt-10 mb-24 bg-white/5 rounded-3xl p-8"
       >
         <SparklesIcon className="absolute top-6 right-6 w-6 h-6 text-fuchsia-400 animate-pulse" />
 
         <textarea
-          className="w-full h-72 p-4 rounded-lg bg-black/30 border border-gray-700 placeholder-gray-500 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
+          className="w-full h-72 p-4 rounded-lg bg-black/30 border border-gray-700 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
           placeholder="// Paste Solidity code here..."
           value={code}
           onChange={(e) => setCode(e.target.value)}
         />
 
-        {/* buttons */}
-        <div className="flex flex-wrap justify-between items-center mt-6 gap-4">
+        {/* analyze button */}
+        <div className="flex justify-center mt-6">
           <button
             onClick={handleAnalyze}
             disabled={loading}
-            className={`px-8 py-2 rounded-lg font-semibold text-white flex items-center justify-center gap-2 shadow-md transition-all ${
-              loading
-                ? "bg-gradient-to-r from-gray-700 to-gray-600 cursor-wait"
-                : "bg-gradient-to-r from-blue-600 to-fuchsia-600 hover:scale-105"
-            }`}
+            className="px-8 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-fuchsia-600 text-white font-semibold hover:scale-105"
           >
-            {loading ? (
-              <>
-                <ClipLoader size={18} color="#fff" /> Scanning...
-              </>
-            ) : (
-              "🚀 Analyze"
-            )}
+            {loading ? "Scanning..." : "🚀 Analyze"}
           </button>
-
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1 bg-gray-700/60 hover:bg-gray-600 px-4 py-2 rounded text-sm"
-            >
-              <ClipboardIcon className="w-4 h-4" /> Copy
-            </button>
-            <button
-              onClick={handleText}
-              className="flex items-center gap-1 bg-gray-700/60 hover:bg-gray-600 px-4 py-2 rounded text-sm"
-            >
-              <ArrowDownTrayIcon className="w-4 h-4" /> Text
-            </button>
-            <button
-              onClick={() => exportPdf("pdf-wrapper")}
-              className="flex items-center gap-1 bg-gray-700/60 hover:bg-gray-600 px-4 py-2 rounded text-sm"
-            >
-              <DocumentArrowDownIcon className="w-4 h-4" /> PDF
-            </button>
-          </div>
         </div>
 
-        {/* result to capture */}
+        {/* result */}
         {result.prediction && (
-          <div
-            id="pdf-wrapper"
-            className="relative mt-10 rounded-2xl border border-gray-700 bg-black/40 p-8 text-center backdrop-blur-md shadow-inner"
-          >
-            {result.prediction === "vulnerable" ? (
-              <div className="absolute inset-0 bg-red-600/10 blur-[150px]" />
-            ) : (
-              <div className="absolute inset-0 bg-green-600/10 blur-[150px]" />
-            )}
-
-            <div className="relative z-10">
-              {result.prediction === "vulnerable" ? (
-                <ExclamationTriangleIcon className="w-20 h-20 text-red-500 mx-auto mb-4" />
-              ) : (
-                <ShieldCheckIcon className="w-20 h-20 text-green-400 mx-auto mb-4" />
-              )}
-
-              <h2
-                className={`text-3xl font-bold ${
-                  result.prediction === "vulnerable" ? "text-red-500" : "text-green-400"
-                }`}
-              >
-                {result.prediction === "vulnerable" ? "⚠ Vulnerable" : "✅ Secure"}
-              </h2>
-
-              <div className="mt-6 h-60 max-w-xs mx-auto">
-                <Pie data={chart} />
-              </div>
-
-              <p className="text-gray-400 text-sm mt-4">
-                Secure {result.prob_secure?.toFixed(3)} | Vulnerable 
-                {result.prob_vulnerable?.toFixed(3)}
-              </p>
+          <div id="pdf-wrapper" className="mt-10 text-center">
+            <h2
+              className={`text-3xl font-bold ${
+                result.prediction === "vulnerable" ? "text-red-500" : "text-green-400"
+              }`}
+            >
+              {result.prediction === "vulnerable" ? "⚠ Vulnerable" : "✅ Secure"}
+            </h2>
+            <div className="h-60 w-60 mx-auto mt-6">
+              <Pie data={chart} />
             </div>
+            <p className="text-gray-400 text-sm mt-4">
+              Secure {result.prob_secure?.toFixed(3)} | Vulnerable{" "}
+              {result.prob_vulnerable?.toFixed(3)}
+            </p>
           </div>
         )}
       </motion.div>
