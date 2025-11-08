@@ -30,12 +30,12 @@ export default function PricingPage() {
   const handleCheckout = async (price_id: string) => {
     try {
       const { data } = await axios.post(
-        "https://aetherguard-api.onrender.com/create-checkout-session", // local backend
-        {
-          price_id,
-          customer_email: "user@example.com", // Simulated demo user
-        }
-      );
+  "https://aetherguard-api.onrender.com/create-checkout-session", // 👈 Render backend
+  {
+    price_id,
+    customer_email: "user@example.com", // TODO: replace with real logged-in user's email
+  }
+);
       const stripe = (window as any).Stripe("pk_test_mock");
       await stripe.redirectToCheckout({ sessionId: data.sessionId });
     } catch (err) {
