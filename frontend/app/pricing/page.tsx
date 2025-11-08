@@ -27,26 +27,49 @@ const plans = [
 ];
 
 export default function PricingPage() {
+  // Handle Stripe checkout creation
   const handleCheckout = async (price_id: string) => {
     try {
+      console.log("Creating checkout for plan:", price_id);
+
+      // 🔗  use the Render backend (note: no trailing slash)
       const { data } = await axios.post(
-  "https://aetherguard-api.onrender.com/create-checkout-session", // 👈 Render backend
-  {
-    price_id,
-    customer_email: "user@example.com", // TODO: replace with real logged-in user's email
-  }
-);
+        "https://aetherguard-api.onrender.com/create-checkout-session",
+        {
+          price_id,
+          customer_email: "user@example.com", // placeholder demo email
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      console.log("Backend response:", data);
+
+      // Load Stripe dynamically (if you later include real publishable key)
       const stripe = (window as any).Stripe("pk_test_mock");
+      if (!stripe) {
+        alert("Stripe.js not loaded - simulation only.");
+        return;
+      }
+
       await stripe.redirectToCheckout({ sessionId: data.sessionId });
-    } catch (err) {
-      console.error(err);
-      alert("Error starting checkout session.");
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      alert(
+        `Checkout failed: ${
+          err.response?.data?.detail || err.message || "Unknown error"
+        }`
+      );
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
-      <h1 className="text-4xl font-bold mb-8 text-center">Choose Your Plan</h1>
+      <h1 className="text-4xl font-bold mb-8 text-center">
+        Choose Your Plan
+      </h1>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
         {plans.map((plan) => (
           <div
@@ -70,6 +93,10 @@ export default function PricingPage() {
           </div>
         ))}
       </div>
+
+      <p className="text-gray-500 mt-8 text-sm">
+        Mock checkout for demo purposes only.
+      </p>
     </div>
   );
 }
