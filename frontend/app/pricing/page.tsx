@@ -3,100 +3,52 @@ import React from "react";
 import axios from "axios";
 
 const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    desc: "Basic access. Limited usage.",
-    price_id: "price_free_mock",
-    features: ["Limited Predictions", "Community Support"],
-  },
-  {
-    name: "Pro",
-    price: "$49/mo",
-    desc: "For regular professionals.",
-    price_id: "price_pro_mock",
-    features: ["Unlimited Predictions", "Priority Support"],
-  },
-  {
-    name: "Enterprise",
-    price: "$99/mo",
-    desc: "For organizations and teams.",
-    price_id: "price_enterprise_mock",
-    features: ["Team Access", "Dedicated Support"],
-  },
+  { name: "Free", price: "$0", desc: "Basic access", price_id: "price_free_mock" },
+  { name: "Pro", price: "$49/mo", desc: "Unlimited predictions", price_id: "price_pro_mock" },
+  { name: "Enterprise", price: "$99/mo", desc: "Team access", price_id: "price_enterprise_mock" },
 ];
 
 export default function PricingPage() {
-  // Handle Stripe checkout creation
   const handleCheckout = async (price_id: string) => {
     try {
-      console.log("Creating checkout for plan:", price_id);
+      console.log("Calling backend for:", price_id);
 
-      // 🔗  use the Render backend (note: no trailing slash)
       const { data } = await axios.post(
-        "https://aetherguard-api.onrender.com/create-checkout-session",
+        "https://aetherguard-api.onrender.com/create-checkout-session", // must match FastAPI exactly
         {
           price_id,
-          customer_email: "user@example.com", // placeholder demo email
+          customer_email: "user@example.com",
         },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      console.log("Backend response:", data);
-
-      // Load Stripe dynamically (if you later include real publishable key)
-      const stripe = (window as any).Stripe("pk_test_mock");
-      if (!stripe) {
-        alert("Stripe.js not loaded - simulation only.");
-        return;
-      }
-
-      await stripe.redirectToCheckout({ sessionId: data.sessionId });
+      console.log("Response:", data);
+      alert("Checkout created!\nSession ID: " + data.sessionId);
     } catch (err: any) {
-      console.error("Checkout error:", err);
-      alert(
-        `Checkout failed: ${
-          err.response?.data?.detail || err.message || "Unknown error"
-        }`
-      );
+      console.error("Error:", err);
+      alert("Checkout failed: " + (err.response?.data?.detail || err.message));
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
-      <h1 className="text-4xl font-bold mb-8 text-center">
-        Choose Your Plan
-      </h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
-        {plans.map((plan) => (
-          <div
-            key={plan.name}
-            className="bg-gray-800 rounded-xl p-6 text-center border-2 border-gray-700 hover:border-indigo-500 transition-all"
-          >
-            <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
-            <p className="text-indigo-400 text-xl mb-4">{plan.price}</p>
-            <p className="text-gray-400 mb-6">{plan.desc}</p>
-            <ul className="text-gray-300 mb-6 space-y-2">
-              {plan.features.map((feature) => (
-                <li key={feature}>• {feature}</li>
-              ))}
-            </ul>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+      <h1 className="text-4xl font-bold mb-8">Choose Your Plan</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl px-6">
+        {plans.map((p) => (
+          <div key={p.name} className="bg-gray-800 p-6 rounded-xl text-center">
+            <h2 className="text-2xl font-semibold mb-2">{p.name}</h2>
+            <p className="text-indigo-400 mb-2">{p.price}</p>
+            <p className="text-gray-400 mb-4">{p.desc}</p>
             <button
-              onClick={() => handleCheckout(plan.price_id)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition"
+              type="button"
+              onClick={() => handleCheckout(p.price_id)}
+              className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg font-medium"
             >
               Get Started
             </button>
           </div>
         ))}
       </div>
-
-      <p className="text-gray-500 mt-8 text-sm">
-        Mock checkout for demo purposes only.
-      </p>
     </div>
   );
 }
