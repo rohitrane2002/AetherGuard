@@ -16,8 +16,9 @@ app.add_middleware(
 )
 
 # --- load your trained model ---
-model = joblib.load("backend/model/vuln_model.joblib")
-vectorizer = joblib.load("backend/model/tfidf_vectorizer.joblib")
+# current working directory is already "backend" on Render
+model = joblib.load("model/vuln_model.joblib")
+vectorizer = joblib.load("model/tfidf_vectorizer.joblib")
 
 # --- define how input should look ---
 class ContractCode(BaseModel):
