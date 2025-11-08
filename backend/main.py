@@ -1,37 +1,125 @@
-from fastapi import FastAPI
+# ============================================================
+# FILE: backend/main.py
+# ============================================================
+
+from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import joblib
+import stripe
+import os
+from typing import Optional
 
-# --- create the FastAPI app ---
-app = FastAPI(title="AetherGuard API")
+# ----------------------------
+# App setup
+# ----------------------------
+app = FastAPI(title="AetherGuard API - Subscription Enabled")
 
-# --- allow frontend to reach backend ---
+# Configure CORS for requests from your Next.js frontend
+origins = [
+    "https://aetherguard.vercel.app",  # your Vercel site
+    "http://localhost:3000",           # local testing
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # or ["http://localhost:3000"]
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- load your trained model ---
-# current working directory is already "backend" on Render
-model = joblib.load("model/vuln_model.joblib")
-vectorizer = joblib.load("model/tfidf_vectorizer.joblib")
+# ----------------------------
+# Stripe configuration (Mock)
+# ----------------------------
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_placeholder")
 
-# --- define how input should look ---
-class ContractCode(BaseModel):
-    code: str
+# Mock Tiers
+PRICE_IDS = {
+    "free": "price_free_mock",
+    "pro": "price_pro_mock",
+    "enterprise": "price_enterprise_mock",
+}
 
-# --- API route that analyzes Solidity code ---
-@app.post("/analyze/")
-def analyze(contract: ContractCode):
-    features = vectorizer.transform([contract.code])
-    prediction = model.predict(features)[0]
-    prob = model.predict_proba(features)[0]
-    return {
-        "prediction": prediction,
-        "prob_secure": round(float(prob[0]), 3),
-        "prob_vulnerable": round(float(prob[1]), 3)
-    }
+# ----------------------------
+# Mock user subscription DB
+# ----------------------------
+mock_user_db = {
+    "user@example.com": {"plan_id": "free"},
+}
+
+def update_user_subscription_status(user_email: str, plan_id: str):
+    """Simulate updating user’s plan in a database."""
+    mock_user_db[user_email] = {"plan_id": plan_id}
+    print(f"[INFO] Updated {user_email} to plan: {plan_id}")
+
+def get_user_plan(email: str) -> str:
+    """Quick lookup of user plan."""
+    user = mock_user_db.get(email)
+    return user["plan_id"] if user else "free"
+
+# ----------------------------
+# Stripe Models for frontend calls
+# ----------------------------
+class CheckoutSessionRequest(BaseModel):
+    price_id: str
+    customer_email: str
+
+
+# ----------------------------
+# Endpoints
+# ----------------------------
+@app.post("/create-checkout-session")
+async def create_checkout_session(req: CheckoutSessionRequest):
+    """Simulate creating a subscription checkout session."""
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            mode="subscription",
+            line_items=[{"price": req.price_id, "quantity": 1}],
+            success_url="https://aetherguard.vercel.app/success",
+            cancel_url="https://aetherguard.vercel.app/cancel",
+            customer_email=req.customer_email,
+        )
+        return {"sessionId": session.id}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Simulated webhook for subscription updates."""
+    payload = await request.body()
+    try:
+        # Simulate a Stripe webhook event
+        event = stripe.Event.construct_from(
+            {
+                "type": "checkout.session.completed",
+                "data": {"object": {"customer_email": "user@example.com", "plan_id": "pro"}},
+            },
+            stripe.api_key,
+        )
+
+        if event.type == "checkout.session.completed":
+            session = event.data.object
+            email = session.get("customer_email")
+            plan_id = session.get("plan_id", "pro")
+            update_user_subscription_status(email, plan_id)
+
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/predict/failure")
+async def predict_failure(user_email: Optional[str] = Header(None)):
+    """Example gated endpoint requiring paid subscription."""
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Missing user email header.")
+    plan = get_user_plan(user_email)
+    if plan in ["free", "trial"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Subscription Required. Upgrade to Pro/Enterprise to use AetherGuard's predictions."
+        )
+    return {"forecast": "Mock forecast output", "plan": plan}
+
+# ============================================================
