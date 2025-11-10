@@ -1,1 +1,17 @@
-node_modules
+# Ignore virtual environments
+venv/
+backend/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Model and large artifacts
+*.safetensors
+*.bin
+*.pt
+
+# Processed data and trained models
+data/processed/
+backend/model/trained_model/
