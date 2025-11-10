@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header
 from fastapi.middleware.cors import CORSMiddleware
+from model.codebert_model import CodeBERTAnalyzer
+from utils.preprocess import re, Path  # ensures preprocess module loads
 
 app = FastAPI(title="AetherGuard API")
 
-# Allow your frontend to call this backend
 origins = [
     "https://aetherguard.vercel.app",
     "http://localhost:3000",
 ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -16,16 +18,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ------------------------------------------------------------
-#  Simple analyzer endpoint  →  always returns a fake result
-# ------------------------------------------------------------
+# Load the trained model once at startup
+analyzer = CodeBERTAnalyzer(model_path="backend/model/trained_model")
+
 @app.post("/analyze/")
 async def analyze_code(code: dict, user_email: str = Header("user@example.com")):
-    # Simulate analysis result
-    result = {
-        "prediction": "secure",
-        "prob_secure": 0.93,
-        "prob_vulnerable": 0.07,
-        "email": user_email,
-    }
+    source = code.get("content", "")
+    result = analyzer.predict(source)
+    result["email"] = user_email
     return result
