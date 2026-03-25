@@ -8,6 +8,7 @@ LABELS = ["secure", "vulnerable"]
 class CodeBERTAnalyzer:
     def __init__(self, model_path: str = "microsoft/codebert-base"):
         path = Path(model_path)
+        self.model_source = str(model_path)
         if path.exists():
             self.model = AutoModelForSequenceClassification.from_pretrained(path)
             self.tokenizer = AutoTokenizer.from_pretrained(path)
@@ -30,4 +31,5 @@ class CodeBERTAnalyzer:
             "prediction": LABELS[idx],
             "prob_secure": float(probs[0]),
             "prob_vulnerable": float(probs[1]),
+            "model_source": self.model_source,
         }

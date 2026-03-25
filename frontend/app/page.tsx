@@ -21,10 +21,10 @@ export default function Home() {
           — analyze, audit, and export vulnerability reports in seconds.
         </p>
         <Link
-          href="/analyze"
+          href="/dashboard"
           className="inline-block mt-8 bg-gradient-to-r from-fuchsia-500 to-cyan-400 text-white px-10 py-3 rounded-lg font-semibold hover:scale-105 transition-transform shadow"
         >
-          🔍 Launch Analyzer
+          Launch Dashboard
         </Link>
       </motion.div>
     </main>

@@ -1,29 +1,41 @@
-from fastapi import FastAPI, Header
+from contextlib import asynccontextmanager
+from typing import Optional
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from config import settings
 from model.codebert_model import CodeBERTAnalyzer
-from utils.preprocess import re, Path  # ensures preprocess module loads
+from routes import build_router
+from services.model_store import ensure_model_dir
 
-app = FastAPI(title="AetherGuard API")
 
-origins = [
-    "https://aetherguard.vercel.app",
-    "http://localhost:3000",
-]
+analyzer: Optional[CodeBERTAnalyzer] = None
+
+
+def get_analyzer() -> Optional[CodeBERTAnalyzer]:
+    return analyzer
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global analyzer
+    model_path = ensure_model_dir()
+    analyzer = CodeBERTAnalyzer(model_path=str(model_path))
+    yield
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "https://aetherguard.vercel.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load the trained model once at startup
-analyzer = CodeBERTAnalyzer(model_path="backend/model/trained_model")
-
-@app.post("/analyze/")
-async def analyze_code(code: dict, user_email: str = Header("user@example.com")):
-    source = code.get("content", "")
-    result = analyzer.predict(source)
-    result["email"] = user_email
-    return result
+app.include_router(build_router(get_analyzer))

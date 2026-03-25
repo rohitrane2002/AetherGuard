@@ -1,6 +1,7 @@
 # Ignore virtual environments
 venv/
 backend/venv/
+node_modules/
 
 # Python cache
 __pycache__/
@@ -15,3 +16,4 @@ __pycache__/
 # Processed data and trained models
 data/processed/
 backend/model/trained_model/
+backend/*.db
