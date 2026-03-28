@@ -11,11 +11,21 @@ class Settings:
     def __init__(self) -> None:
         self.app_name = os.getenv("APP_NAME", "AetherGuard API")
         self.environment = os.getenv("ENVIRONMENT", "development")
+        self.model_backend = os.getenv("MODEL_BACKEND", "lightweight").lower()
         self.model_dir = Path(os.getenv("MODEL_DIR", str(DEFAULT_MODEL_DIR)))
         self.model_repo_id = os.getenv("MODEL_REPO_ID")
         self.model_revision = os.getenv("MODEL_REVISION")
         self.model_source_url = os.getenv("MODEL_SOURCE_URL")
         self.hf_token = os.getenv("HF_TOKEN")
+        self.lightweight_model_path = Path(
+            os.getenv("LIGHTWEIGHT_MODEL_PATH", str(BASE_DIR / "model" / "vuln_model.joblib"))
+        )
+        self.lightweight_vectorizer_path = Path(
+            os.getenv(
+                "LIGHTWEIGHT_VECTORIZER_PATH",
+                str(BASE_DIR / "model" / "tfidf_vectorizer.joblib"),
+            )
+        )
         self.allow_base_model_fallback = (
             os.getenv("ALLOW_BASE_MODEL_FALLBACK", "false").lower() == "true"
         )

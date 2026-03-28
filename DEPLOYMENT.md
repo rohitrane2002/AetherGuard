@@ -13,10 +13,14 @@ cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
 ```text
 APP_NAME=AetherGuard API
 ENVIRONMENT=production
+MODEL_BACKEND=lightweight
+LIGHTWEIGHT_MODEL_PATH=/opt/render/project/src/backend/model/vuln_model.joblib
+LIGHTWEIGHT_VECTORIZER_PATH=/opt/render/project/src/backend/model/tfidf_vectorizer.joblib
 MODEL_DIR=/opt/render/project/src/backend/model/trained_model
-MODEL_REPO_ID=rohitrane2002/aetherguard-codebert
+MODEL_REPO_ID=your-hf-username/your-model-repo
 MODEL_REVISION=main
-HF_TOKEN=your_huggingface_token
+HF_TOKEN=your_huggingface_token_if_repo_is_private
+# Or use MODEL_SOURCE_URL=https://example.com/aetherguard-trained-model.zip
 ALLOW_BASE_MODEL_FALLBACK=false
 DATABASE_URL=your_render_postgres_url
 JWT_SECRET=generate-a-long-random-secret
@@ -40,8 +44,13 @@ API_KEY_RATE_LIMIT_PER_MINUTE=120
 ```
 
 Notes:
+- `MODEL_BACKEND=lightweight` is the recommended production setting for Render Free.
+- The lightweight backend uses the committed `joblib` and TF-IDF artifacts and avoids loading transformer weights into memory.
 - Omit `HF_TOKEN` if the Hugging Face model repo is public.
-- Keep `ALLOW_BASE_MODEL_FALLBACK=false` in production.
+- Configure exactly one remote model source in Render: `MODEL_REPO_ID` or `MODEL_SOURCE_URL`.
+- The Hugging Face repo root must contain the transformer artifacts directly, including `config.json` and `tokenizer_config.json`.
+- Keep `ALLOW_BASE_MODEL_FALLBACK=false` in production once your trained model repo is populated.
+- If your Hugging Face repo is still empty and you need the backend live immediately, set `ALLOW_BASE_MODEL_FALLBACK=true` temporarily so the API boots with base CodeBERT.
 - `DATABASE_URL` may be a Render Postgres URL. The backend normalizes `postgres://` automatically.
 - Set a strong `JWT_SECRET` in production.
 - If `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are set, checkout and webhook handling use real Stripe test mode. Otherwise the backend stays in mock billing mode.
@@ -85,6 +94,24 @@ Expected files at the repo root include:
 - `config.json`
 - tokenizer files such as `tokenizer.json` and `tokenizer_config.json`
 - weight files such as `model.safetensors` or `pytorch_model.bin`
+
+### Model Troubleshooting On Render
+
+If the service boots but `/health` shows `model.ready: false`, check `model.error` in the response.
+
+Common causes:
+- `MODEL_BACKEND=lightweight` but `LIGHTWEIGHT_MODEL_PATH` or `LIGHTWEIGHT_VECTORIZER_PATH` points to the wrong file.
+- `MODEL_REPO_ID` points to a repo that does not exist or is private without `HF_TOKEN`.
+- The Hugging Face repo exists, but the trained model files are nested in a subfolder instead of the repo root.
+- `MODEL_SOURCE_URL` is not a direct `.zip` or `.tar.gz` download URL.
+- `MODEL_DIR` points somewhere different from where the app has downloaded the files.
+
+Quick verification steps:
+- Open the Render service environment and confirm `MODEL_REPO_ID`, `MODEL_REVISION`, and `HF_TOKEN` are set exactly as intended.
+- For Render Free, prefer `MODEL_BACKEND=lightweight` and verify the two lightweight artifact paths instead of using Hugging Face.
+- Redeploy the backend and call `GET /health`.
+- If `model.error` mentions the Hugging Face repo, verify the repo contents and permissions.
+- If `model.error` mentions `MODEL_SOURCE_URL`, test that the URL downloads an archive directly.
 
 ## Frontend on Vercel
 

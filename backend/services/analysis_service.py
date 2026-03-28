@@ -1,11 +1,10 @@
 from sqlalchemy.orm import Session
 
-from model.codebert_model import CodeBERTAnalyzer
 from models import AnalysisLog, User
 from services.security_service import compute_confidence
 
 
-def run_analysis_and_log(db: Session, analyzer: CodeBERTAnalyzer, user: User, source: str) -> dict:
+def run_analysis_and_log(db: Session, analyzer, user: User, source: str) -> dict:
     result = analyzer.predict(source)
     confidence = compute_confidence(result["prob_secure"], result["prob_vulnerable"])
     log_entry = AnalysisLog(

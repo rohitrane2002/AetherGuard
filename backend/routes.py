@@ -23,7 +23,6 @@ from billing import (
 )
 from config import settings
 from db import get_db
-from model.codebert_model import CodeBERTAnalyzer
 from models import AnalysisLog, Subscription, User
 from schemas import (
     AccountResponse,
@@ -51,7 +50,7 @@ from services.security_service import snippet_from_code
 from services.usage_service import get_user_usage, increment_usage
 
 
-def build_router(get_analyzer):
+def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
     router = APIRouter()
 
     def enforce_ip_rate_limit(request: Request) -> None:
@@ -72,9 +71,14 @@ def build_router(get_analyzer):
             database_connected = False
 
         analyzer = get_analyzer()
+        analyzer_init_error = get_analyzer_init_error()
         return HealthResponse(
             status="ok" if analyzer is not None and database_connected else "degraded",
-            model={"ready": analyzer is not None, "source": analyzer.model_source if analyzer else None},
+            model={
+                "ready": analyzer is not None,
+                "source": analyzer.model_source if analyzer else None,
+                "error": analyzer_init_error,
+            },
             database={"connected": database_connected},
         )
 
