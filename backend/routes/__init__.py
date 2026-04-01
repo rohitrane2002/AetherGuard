@@ -149,8 +149,27 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     @router.get("/dashboard/summary")
     async def dashboard_summary(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-        from fastapi.encoders import jsonable_encoder
-        return jsonable_encoder({"status": "OK", "debug_user": current_user.email})
+        try:
+            subscription = db.execute(
+                select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
+            ).scalar_one_or_none()
+            usage = get_user_usage(db, current_user)
+            recent_logs = db.execute(
+                select(AnalysisLog).where(AnalysisLog.user_id == current_user.id).order_by(AnalysisLog.id.desc()).limit(6)
+            ).scalars().all()
+            workspace = workspace_counts(db, current_user)
+            notifications_feed = list_notifications(db, current_user, limit=8)
+            notification_totals = notification_metrics(db, current_user)
+            
+            return {
+                "status": "QUERIES_PASSED",
+                "logs_count": len(recent_logs),
+                "workspace_role": workspace.get("role"),
+                "notifications_count": len(notifications_feed)
+            }
+        except Exception as e:
+            import traceback
+            return {"error": str(e), "trace": traceback.format_exc()}
 
     @router.get("/account", response_model=AccountResponse)
     async def read_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
