@@ -9,7 +9,9 @@ from models import AnalysisLog  # noqa: F401
 
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
+url = settings.database_url.replace("%", "%%")
+print(f"ALEMBIC CONNECTING TO: {url[:20]}***")
+config.set_main_option("sqlalchemy.url", url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
