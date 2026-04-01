@@ -1,0 +1,28 @@
+# Ignore virtual environments
+venv/
+backend/venv/
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+
+# Model and large artifacts
+*.safetensors
+*.bin
+*.pt
+
+# Processed data and trained models
+data/processed/
+backend/model/trained_model/
+backend/*.db
+.venv/
+backend/.venv/
+uvicorn.log
+register_prod.json
+dashboard_prod.json
+testenv/
+.venv311/
+.DS_Store

@@ -1,0 +1,37 @@
+
+> aetherguard-frontend@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/13) ...
+   Generating static pages (3/13) 
+   Generating static pages (6/13) 
+   Generating static pages (9/13) 
+ ✓ Generating static pages (13/13)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    13.5 kB         148 kB
+├ ○ /_not-found                          878 B          88.5 kB
+├ ○ /account                             4.34 kB         150 kB
+├ ○ /analyze                             6.33 kB         326 kB
+├ ○ /auth                                5.67 kB         137 kB
+├ ○ /dashboard                           5.68 kB         152 kB
+├ ○ /notifications                       4.3 kB          150 kB
+├ ○ /pricing                             4.8 kB          151 kB
+├ ○ /reports                             3.48 kB         323 kB
+└ ○ /workspace                           4.51 kB         150 kB
++ First Load JS shared by all            87.6 kB
+  ├ chunks/364-6cca5240c9e387ff.js       31.9 kB
+  ├ chunks/618f8807-84bd0160574a96e3.js  53.7 kB
+  └ other shared chunks (total)          2.08 kB
+
+
+○  (Static)  prerendered as static content
+
