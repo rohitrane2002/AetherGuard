@@ -53,8 +53,13 @@ def build_analyzer() -> Analyzer:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global analyzer, analyzer_init_error
-    analyzer = None
-    analyzer_init_error = None
+    try:
+        analyzer = build_analyzer()
+        analyzer_init_error = None
+    except Exception as exc:
+        analyzer = None
+        analyzer_init_error = str(exc)
+        logger.exception("Analyzer initialization failed")
     yield
 
 
