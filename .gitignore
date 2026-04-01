@@ -26,3 +26,4 @@ dashboard_prod.json
 testenv/
 .venv311/
 .DS_Store
+fetch_prod.py
