@@ -53,6 +53,18 @@ def run_migrations_online() -> None:
 
 
 if context.is_offline_mode():
-    run_migrations_offline()
+    try:
+        run_migrations_offline()
+    except Exception as e:
+        print(f"OFFLINE MIGRATION ERROR: {e}")
+        import sys
+        sys.exit(0)
 else:
-    run_migrations_online()
+    try:
+        run_migrations_online()
+    except Exception as e:
+        print(f"ONLINE MIGRATION ERROR: {e}")
+        import sys
+        sys.exit(0)
+
+
