@@ -77,4 +77,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/debug/error")
+async def debug_error():
+    import os
+    import alembic.config
+    import alembic.script
+    
+    config = alembic.config.Config("backend/alembic.ini")
+    script = alembic.script.ScriptDirectory.from_config(config)
+    head = script.get_current_head()
+    versions = [s.revision for s in script.walk_revisions()]
+    
+    return {
+        "head": head,
+        "available_versions": versions,
+        "env_check": os.environ.get("DATABASE_URL")[:15] if os.environ.get("DATABASE_URL") else "Missing"
+    }
+
 app.include_router(build_router(get_analyzer, get_analyzer_init_error))
