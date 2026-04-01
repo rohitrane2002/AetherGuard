@@ -4,7 +4,7 @@ import sys
 base_url = "https://aetherguard-api.onrender.com"
 
 # 1. Register a new user to test fresh
-email = "test_debug_36@aetherguard.dev"
+email = "test_debug_37@aetherguard.dev"
 r_reg = requests.post(f"{base_url}/auth/register", json={"email": email, "password": "Password123!"})
 if r_reg.status_code != 201:
     print(f"Failed to register. {r_reg.text}")

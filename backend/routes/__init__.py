@@ -147,7 +147,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
     async def debug_test(current_user: User = Depends(get_current_user)):
         return {"status": "REACHED", "user": current_user.email}
 
-    @router.get("/dashboard/summary")
+    @router.get("/dashboard/summary", response_model=DashboardSummaryResponse)
     async def dashboard_summary(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         try:
             subscription = db.execute(
@@ -161,15 +161,34 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             notifications_feed = list_notifications(db, current_user, limit=8)
             notification_totals = notification_metrics(db, current_user)
             
-            return {
-                "status": "QUERIES_PASSED",
-                "logs_count": len(recent_logs),
-                "workspace_role": workspace.get("role"),
-                "notifications_count": len(notifications_feed)
-            }
+            recent_scans = [
+                {
+                    "id": log.id,
+                    "prediction": log.prediction,
+                    "confidence": log.confidence,
+                    "timestamp": log.created_at.isoformat(),
+                    "contract_snippet": snippet_from_code(log.source_code),
+                    "risk_score": max(0, min(100, int(round(log.prob_vulnerable * 100)))),
+                }
+                for log in recent_logs
+            ]
+            
+            return DashboardSummaryResponse(
+                account={
+                    "id": str(current_user.id),
+                    "email": current_user.email,
+                    "plan": subscription.plan if subscription else current_user.plan,
+                    "status": subscription.status if subscription else current_user.subscription_status,
+                },
+                usage=usage,
+                recent_scans=recent_scans,
+                chat_history=get_chat_history(db, current_user, limit=12),
+                notifications=notifications_feed,
+                workspace={**workspace, "notification_metrics": notification_totals},
+            )
         except Exception as e:
             import traceback
-            return {"error": str(e), "trace": traceback.format_exc()}
+            raise HTTPException(status_code=500, detail=f"PRODUCTION_CRASH: {str(e)}\n{traceback.format_exc()}")
 
     @router.get("/account", response_model=AccountResponse)
     async def read_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
