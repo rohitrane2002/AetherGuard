@@ -106,12 +106,12 @@ export default function ScrollStory({ deviceTier }: { deviceTier: DeviceTier }) 
   return (
     <section
       ref={ref}
-      className="py-10 md:py-14"
+      className="py-6 md:py-8"
     >
       <div>
         <div className="grid w-full gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Left: Cinematic visual panel */}
-          <div className="relative min-h-[31rem] overflow-hidden rounded-[32px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,16,30,0.85),rgba(6,10,20,0.92))] p-8">
+          <div className="relative min-h-[26rem] overflow-hidden rounded-[32px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,16,30,0.85),rgba(6,10,20,0.92))] p-7">
             {/* Animated parallax blobs */}
             <motion.div
               style={{ y: layerOne }}

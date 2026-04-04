@@ -133,7 +133,7 @@ export default function ThreatIntelligence({ deviceTier }: { deviceTier: DeviceT
   const perspective = 1200;
 
   return (
-    <section ref={ref} className="py-16 md:py-24">
+    <section ref={ref} className="pt-4 pb-16 md:pt-6 md:pb-20">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}

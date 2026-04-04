@@ -154,12 +154,12 @@ export default function Home() {
           <ScanSection deviceTier={deviceTier} />
         </div>
 
-        <div className="mt-16 md:mt-20">
+        <div className="mt-10 md:mt-12">
           <ScrollStory deviceTier={deviceTier} />
         </div>
 
         {/* ── Threat Intelligence ── */}
-        <div className="mt-16 md:mt-20">
+        <div className="mt-6 md:mt-8">
           <ThreatIntelligence deviceTier={deviceTier} />
         </div>
 
