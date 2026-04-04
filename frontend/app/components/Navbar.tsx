@@ -39,8 +39,8 @@ export default function Navbar() {
   }, [email]);
 
   return (
-    <header className="fixed right-0 top-0 z-50 flex w-full items-center justify-end px-4 py-4 md:pl-[304px] md:pr-6">
-      <div className="glass-panel panel-sheen flex w-full max-w-[calc(100vw-320px)] flex-wrap items-center justify-between gap-3 rounded-[24px] px-5 py-4">
+    <header className="fixed right-0 top-0 z-50 flex w-full items-center justify-end px-4 py-3 md:pl-[304px] md:pr-6">
+      <div className="glass-panel panel-sheen flex w-full max-w-[calc(100vw-320px)] flex-wrap items-center justify-between gap-3 rounded-[24px] px-5 py-3.5">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-slate-500">AetherGuard Intelligence Layer</p>
           <h1 className="text-sm font-medium text-slate-200">AI-native smart contract defense platform</h1>

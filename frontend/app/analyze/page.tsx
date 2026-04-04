@@ -297,8 +297,8 @@ export default function AnalyzePage() {
           />
 
           <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <RiskMeter score={activeResult?.risk_score ?? 0} />
+            <div className="grid gap-4 md:grid-cols-[0.82fr_1.18fr]">
+              <RiskMeter score={activeResult?.risk_score ?? 0} compact />
               <Panel className="space-y-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Issue counts</p>

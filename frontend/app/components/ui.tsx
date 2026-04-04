@@ -111,20 +111,20 @@ export function Button({
   );
 }
 
-export function RiskMeter({ score }: { score: number }) {
+export function RiskMeter({ score, compact = false }: { score: number; compact?: boolean }) {
   const tone = score >= 70 ? "bg-rose-500" : score >= 40 ? "bg-amber-400" : "bg-emerald-400";
   const label = score >= 70 ? "Critical" : score >= 40 ? "Elevated" : "Stable";
 
   return (
-    <div className="panel-sheen rounded-[24px] border border-white/10 bg-white/5 p-5">
+    <div className={clsx("panel-sheen rounded-[24px] border border-white/10 bg-white/5", compact ? "p-4" : "p-5")}>
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Risk score</p>
         <span className="text-sm font-medium text-white">{label}</span>
       </div>
-      <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-900/90">
+      <div className={clsx("overflow-hidden rounded-full bg-slate-900/90", compact ? "mt-4 h-2.5" : "mt-5 h-3")}>
         <div className={clsx("h-full rounded-full transition-all", tone)} style={{ width: `${score}%` }} />
       </div>
-      <div className="mt-4 text-4xl font-semibold text-white">{score}</div>
+      <div className={clsx("font-semibold text-white", compact ? "mt-3 text-3xl" : "mt-4 text-4xl")}>{score}</div>
     </div>
   );
 }
