@@ -169,7 +169,7 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <Toaster position="top-right" />
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-[1520px] space-y-8 pt-3 md:pt-5">
         <SectionHeading
           eyebrow="Command Center"
           title="Operate your AI-native smart contract security workspace."
@@ -198,7 +198,7 @@ export default function DashboardPage() {
               </Panel>
             ) : null}
 
-            <div className="grid items-start gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+            <div className="grid items-start gap-6 xl:grid-cols-[1.14fr_0.86fr]">
               <Panel className="space-y-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -273,7 +273,7 @@ export default function DashboardPage() {
               </Panel>
             </div>
 
-            <div className="grid items-start gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid items-start gap-6 xl:grid-cols-[1.2fr_0.8fr]">
               <div className="space-y-6">
                 <Panel>
                   <div className="flex items-center justify-between">
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                     </div>
                     <Button tone="ghost" onClick={loadDashboard}>Refresh</Button>
                   </div>
-                  <div className="mt-5 space-y-3">
+                  <div className="mt-5 grid gap-3 xl:grid-cols-2">
                     {summary.recent_scans.map((scan) => (
                       <div key={scan.id} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
                         <div className="flex items-start justify-between gap-4">
@@ -385,7 +385,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   ) : null}
-                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  <div className="mt-5 grid gap-3 xl:grid-cols-2">
                     {apiKeys.map((key) => (
                       <div key={key.id} className="rounded-[20px] border border-white/10 bg-white/5 p-4">
                         <div className="flex items-center justify-between gap-3">
@@ -428,7 +428,7 @@ export default function DashboardPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="scrollbar-thin h-[20rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+                  <div className="scrollbar-thin h-[16rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
                     {chatMessages.length === 0 ? (
                       <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
                         Ask for vulnerability explanations, secure rewrites, or exploit narratives.
@@ -452,7 +452,7 @@ export default function DashboardPage() {
                   <textarea
                     value={chatInput}
                     onChange={(event) => setChatInput(event.target.value)}
-                    className="h-24 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
+                    className="h-20 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
                     placeholder="Explain the last critical issue and give me a secure Solidity patch."
                   />
                   <div className="flex items-center justify-between gap-3">
