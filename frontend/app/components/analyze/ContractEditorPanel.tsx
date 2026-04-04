@@ -10,7 +10,7 @@ import type { LineInsight } from "./types";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[31rem] items-center justify-center bg-[#040711] text-sm text-slate-400">
+    <div className="flex h-[26rem] items-center justify-center bg-[#040711] text-sm text-slate-400">
       Loading editor workspace...
     </div>
   ),
@@ -153,7 +153,7 @@ export default function ContractEditorPanel({
         </div>
 
         <MonacoEditor
-          height="31rem"
+          height="26rem"
           defaultLanguage="sol"
           value={code}
           theme="vs-dark"

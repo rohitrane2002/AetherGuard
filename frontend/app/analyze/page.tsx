@@ -278,7 +278,7 @@ export default function AnalyzePage() {
           <StatCard label="Current plan" value={activeResult ? `${activeResult.risk_score}/100` : "--"} helper="Security score across the active contract" accent="amber" />
         </div>
 
-        <div className="grid items-start gap-6 xl:grid-cols-[1.08fr_0.4fr_0.78fr]">
+        <div className="grid items-start gap-6 xl:grid-cols-[1.14fr_0.86fr]">
           <ContractEditorPanel
             code={code}
             onChange={(value) => {
@@ -296,8 +296,38 @@ export default function AnalyzePage() {
             fixing={fixing}
           />
 
-          <div className="space-y-4">
-            <RiskMeter score={activeResult?.risk_score ?? 0} />
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <RiskMeter score={activeResult?.risk_score ?? 0} />
+              <Panel className="space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Issue counts</p>
+                  <h2 className="mt-2 text-xl font-semibold text-white">Security posture</h2>
+                </div>
+                <div className="grid gap-3">
+                  <StatCard label="Critical" value={String(issueCounts.critical)} helper="Funds-at-risk paths" accent="rose" />
+                  <StatCard label="High" value={String(issueCounts.high)} helper="Privilege or treasury issues" accent="amber" />
+                  <StatCard label="Medium" value={String(issueCounts.medium)} helper="Arithmetic or hygiene concerns" accent="emerald" />
+                </div>
+              </Panel>
+            </div>
+
+            <CopilotPanel
+              messages={copilotMessages}
+              input={chatInput}
+              onInputChange={setChatInput}
+              onSend={sendCopilot}
+              onQuickPrompt={(prompt) => {
+                setChatInput("");
+                void streamCopilot(prompt);
+              }}
+              sending={sending}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[0.52fr_0.48fr]">
+          <div className="space-y-6">
             <ScanProgressPanel
               steps={buildProgressSteps(scanStepIndex, fullScanSteps, !loading && Boolean(result))}
               progress={scanProgress}
@@ -307,70 +337,50 @@ export default function AnalyzePage() {
               progress={liveProgress}
               live
             />
-
-            <div className="grid gap-4">
-              <StatCard label="Critical" value={String(issueCounts.critical)} helper="Funds-at-risk paths" accent="rose" />
-              <StatCard label="High" value={String(issueCounts.high)} helper="Privilege or treasury issues" accent="amber" />
-              <StatCard label="Medium" value={String(issueCounts.medium)} helper="Arithmetic or hygiene concerns" accent="emerald" />
-            </div>
           </div>
 
-          <CopilotPanel
-            messages={copilotMessages}
-            input={chatInput}
-            onInputChange={setChatInput}
-            onSend={sendCopilot}
-            onQuickPrompt={(prompt) => {
-              setChatInput("");
-              void streamCopilot(prompt);
-            }}
-            sending={sending}
-          />
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[0.98fr_1.02fr]">
-          <Panel id="audit-report">
-            <div className="flex items-center gap-3">
-              <CodeBracketSquareIcon className="h-5 w-5 text-cyan-300" />
-              <div>
-                <h2 className="text-2xl font-semibold text-white">Audit intelligence</h2>
-                <p className="text-sm text-slate-400">Summary, score, remediation guidance, and PDF-friendly reporting in one place.</p>
-              </div>
-            </div>
-            {activeResult ? (
-              <div className="mt-5 space-y-5">
-                <div className="grid gap-4 md:grid-cols-4">
-                  <StatCard label="Security score" value={`${activeResult.risk_score}`} helper={activeResult.prediction} accent={activeResult.risk_score >= 70 ? "rose" : activeResult.risk_score >= 40 ? "amber" : "emerald"} />
-                  <StatCard label="Reentrancy" value={String(activeResult.findings.filter((item) => item.slug.includes("reentrancy")).length)} helper="Value transfer risks" accent="rose" />
-                  <StatCard label="Access Control" value={String(activeResult.findings.filter((item) => item.slug.includes("access")).length)} helper="Privilege boundaries" accent="amber" />
-                  <StatCard label="Overflow" value={String(activeResult.findings.filter((item) => item.slug.includes("overflow")).length)} helper="Arithmetic concerns" accent="emerald" />
-                </div>
-
-                <div className="panel-sheen rounded-[24px] border border-white/10 bg-white/5 p-5">
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Contract summary</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-300">{activeResult.summary}</p>
-                </div>
-
-                <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Fix suggestions</p>
-                  <ul className="mt-4 space-y-3 text-sm text-slate-300">
-                    {activeResult.fix_suggestions.map((suggestion) => (
-                      <li key={suggestion} className="flex gap-3">
-                        <WrenchScrewdriverIcon className="mt-0.5 h-4 w-4 text-cyan-300" />
-                        <span>{suggestion}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 p-5 text-sm text-slate-400">
-                Start typing to receive live AI risk feedback and run the premium audit when ready.
-              </div>
-            )}
-          </Panel>
-
           <div className="space-y-6">
+            <Panel id="audit-report">
+              <div className="flex items-center gap-3">
+                <CodeBracketSquareIcon className="h-5 w-5 text-cyan-300" />
+                <div>
+                  <h2 className="text-2xl font-semibold text-white">Audit intelligence</h2>
+                  <p className="text-sm text-slate-400">Summary, score, remediation guidance, and PDF-friendly reporting in one place.</p>
+                </div>
+              </div>
+              {activeResult ? (
+                <div className="mt-5 space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                    <StatCard label="Security score" value={`${activeResult.risk_score}`} helper={activeResult.prediction} accent={activeResult.risk_score >= 70 ? "rose" : activeResult.risk_score >= 40 ? "amber" : "emerald"} />
+                    <StatCard label="Reentrancy" value={String(activeResult.findings.filter((item) => item.slug.includes("reentrancy")).length)} helper="Value transfer risks" accent="rose" />
+                    <StatCard label="Access Control" value={String(activeResult.findings.filter((item) => item.slug.includes("access")).length)} helper="Privilege boundaries" accent="amber" />
+                    <StatCard label="Overflow" value={String(activeResult.findings.filter((item) => item.slug.includes("overflow")).length)} helper="Arithmetic concerns" accent="emerald" />
+                  </div>
+
+                  <div className="panel-sheen rounded-[24px] border border-white/10 bg-white/5 p-5">
+                    <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Contract summary</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-300">{activeResult.summary}</p>
+                  </div>
+
+                  <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+                    <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Fix suggestions</p>
+                    <ul className="mt-4 space-y-3 text-sm text-slate-300">
+                      {activeResult.fix_suggestions.map((suggestion) => (
+                        <li key={suggestion} className="flex gap-3">
+                          <WrenchScrewdriverIcon className="mt-0.5 h-4 w-4 text-cyan-300" />
+                          <span>{suggestion}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 p-5 text-sm text-slate-400">
+                  Start typing to receive live AI risk feedback and run the premium audit when ready.
+                </div>
+              )}
+            </Panel>
+
             <Panel>
               <div className="flex items-center gap-3">
                 <ExclamationTriangleIcon className="h-5 w-5 text-cyan-300" />
