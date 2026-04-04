@@ -47,7 +47,7 @@ export default function CopilotPanel({
         ))}
       </div>
 
-      <div className="scrollbar-thin mt-5 h-[40rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+      <div className="scrollbar-thin mt-5 h-[31rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
         {messages.length === 0 ? (
           <>
             <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-200">

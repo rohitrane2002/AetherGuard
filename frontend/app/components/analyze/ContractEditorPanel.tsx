@@ -7,7 +7,14 @@ import { BoltIcon } from "@heroicons/react/24/solid";
 import { Button, Panel } from "../ui";
 import type { LineInsight } from "./types";
 
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[31rem] items-center justify-center bg-[#040711] text-sm text-slate-400">
+      Loading editor workspace...
+    </div>
+  ),
+});
 
 function severityClass(severity: LineInsight["severity"], kind: LineInsight["kind"]) {
   if (kind === "change") return "border-l-4 border-cyan-400 bg-cyan-500/8";
@@ -146,12 +153,13 @@ export default function ContractEditorPanel({
         </div>
 
         <MonacoEditor
-          height="40rem"
+          height="31rem"
           defaultLanguage="sol"
           value={code}
           theme="vs-dark"
           options={{
             minimap: { enabled: false },
+            automaticLayout: true,
             fontSize: 14,
             smoothScrolling: true,
             glyphMargin: true,
@@ -180,7 +188,7 @@ export default function ContractEditorPanel({
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-4 xl:grid-cols-[0.84fr_1.16fr]">
         <div className="flex flex-wrap gap-3">
           <Button onClick={onAnalyze} disabled={loading}>
             {loading ? "Analyzing..." : "Run premium audit"}

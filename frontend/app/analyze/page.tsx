@@ -278,7 +278,7 @@ export default function AnalyzePage() {
           <StatCard label="Current plan" value={activeResult ? `${activeResult.risk_score}/100` : "--"} helper="Security score across the active contract" accent="amber" />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.45fr_0.78fr]">
+        <div className="grid items-start gap-6 xl:grid-cols-[1.08fr_0.4fr_0.78fr]">
           <ContractEditorPanel
             code={code}
             onChange={(value) => {

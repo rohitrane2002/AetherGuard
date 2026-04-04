@@ -17,7 +17,7 @@ export default function AppShell({
       <BackgroundGrid />
       <Sidebar />
       <Navbar />
-      <div className="relative min-h-screen px-4 pb-16 pt-28 md:pl-[304px] md:pr-6">{children}</div>
+      <div className="relative min-h-screen px-4 pb-16 pt-36 md:pl-[304px] md:pr-6 md:pt-40">{children}</div>
     </main>
   );
 }
