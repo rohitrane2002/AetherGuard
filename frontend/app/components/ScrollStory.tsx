@@ -106,9 +106,9 @@ export default function ScrollStory({ deviceTier }: { deviceTier: DeviceTier }) 
   return (
     <section
       ref={ref}
-      className={deviceTier === "desktop" ? "relative h-[160vh]" : "py-10 md:py-14"}
+      className="py-10 md:py-14"
     >
-      <div className={deviceTier === "desktop" ? "sticky top-8 flex min-h-[88vh] items-center" : ""}>
+      <div>
         <div className="grid w-full gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Left: Cinematic visual panel */}
           <div className="relative min-h-[31rem] overflow-hidden rounded-[32px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,16,30,0.85),rgba(6,10,20,0.92))] p-8">
