@@ -26,7 +26,7 @@ export default function CopilotPanel({
   sending: boolean;
 }) {
   return (
-    <Panel className="flex flex-col">
+    <Panel className="flex flex-col self-start">
       <div className="flex items-center gap-3">
         <SparklesIcon className="h-5 w-5 text-cyan-300" />
         <div>
@@ -47,7 +47,7 @@ export default function CopilotPanel({
         ))}
       </div>
 
-      <div className="scrollbar-thin mt-5 h-[26rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+      <div className="scrollbar-thin mt-5 h-[19rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
         {messages.length === 0 ? (
           <>
             <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
@@ -80,7 +80,7 @@ export default function CopilotPanel({
       <textarea
         value={input}
         onChange={(event) => onInputChange(event.target.value)}
-        className="mt-4 h-28 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
+        className="mt-4 h-24 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
         placeholder="Ask for a short explanation, a minimal fix, or a safer rewrite."
       />
       <div className="mt-4 flex justify-end">

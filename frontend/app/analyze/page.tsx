@@ -47,6 +47,12 @@ const severityTone: Record<string, string> = {
   low: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
 };
 
+const countTone: Record<"critical" | "high" | "medium", string> = {
+  critical: "border-rose-400/20 bg-rose-500/10 text-rose-100",
+  high: "border-amber-400/20 bg-amber-500/10 text-amber-100",
+  medium: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
+};
+
 const fullScanSteps = [
   ["Analyzing contract", "Parsing Solidity and building execution graph."],
   ["Checking reentrancy", "Inspecting external calls against state mutation order."],
@@ -295,32 +301,45 @@ export default function AnalyzePage() {
           fixing={fixing}
         />
 
-        <div className="grid gap-6 xl:grid-cols-[0.44fr_0.56fr]">
+        <div className="grid items-start gap-6 xl:grid-cols-[1.02fr_0.98fr]">
           <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-[0.72fr_1.28fr]">
+            <div className="grid items-start gap-4 xl:grid-cols-[0.74fr_1.26fr]">
               <RiskMeter score={activeResult?.risk_score ?? 0} compact />
-              <Panel className="space-y-4">
+              <Panel className="self-start space-y-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Issue counts</p>
                   <h2 className="mt-2 text-xl font-semibold text-white">Security posture</h2>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
-                  <StatCard label="Critical" value={String(issueCounts.critical)} helper="Funds-at-risk paths" accent="rose" />
-                  <StatCard label="High" value={String(issueCounts.high)} helper="Privilege or treasury issues" accent="amber" />
-                  <StatCard label="Medium" value={String(issueCounts.medium)} helper="Arithmetic or hygiene concerns" accent="emerald" />
+                <div className="grid gap-3 md:grid-cols-3">
+                  {[
+                    ["critical", issueCounts.critical, "Funds-at-risk paths"],
+                    ["high", issueCounts.high, "Privilege or treasury issues"],
+                    ["medium", issueCounts.medium, "Arithmetic or hygiene concerns"],
+                  ].map(([label, value, helper]) => (
+                    <div
+                      key={label}
+                      className={`rounded-[22px] border p-4 ${countTone[label as "critical" | "high" | "medium"]}`}
+                    >
+                      <p className="text-[11px] uppercase tracking-[0.26em] text-slate-300">{label}</p>
+                      <div className="mt-4 text-4xl font-semibold text-white">{value}</div>
+                      <p className="mt-3 text-sm leading-6 text-slate-300/85">{helper}</p>
+                    </div>
+                  ))}
                 </div>
               </Panel>
             </div>
 
-            <ScanProgressPanel
-              steps={buildProgressSteps(scanStepIndex, fullScanSteps, !loading && Boolean(result))}
-              progress={scanProgress}
-            />
-            <ScanProgressPanel
-              steps={buildProgressSteps(liveStepIndex, liveScanSteps, !liveLoading && Boolean(liveResult))}
-              progress={liveProgress}
-              live
-            />
+            <div className="grid items-start gap-6 xl:grid-cols-2">
+              <ScanProgressPanel
+                steps={buildProgressSteps(scanStepIndex, fullScanSteps, !loading && Boolean(result))}
+                progress={scanProgress}
+              />
+              <ScanProgressPanel
+                steps={buildProgressSteps(liveStepIndex, liveScanSteps, !liveLoading && Boolean(liveResult))}
+                progress={liveProgress}
+                live
+              />
+            </div>
           </div>
 
           <CopilotPanel
@@ -336,7 +355,7 @@ export default function AnalyzePage() {
           />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[0.56fr_0.44fr]">
+        <div className="grid items-start gap-6 xl:grid-cols-[0.58fr_0.42fr]">
           <div className="space-y-6">
             <Panel id="audit-report">
               <div className="flex items-center gap-3">
@@ -378,25 +397,6 @@ export default function AnalyzePage() {
                 </div>
               )}
             </Panel>
-
-            <Panel>
-              <div className="flex items-center gap-3">
-                <CheckBadgeIcon className="h-5 w-5 text-cyan-300" />
-                <div>
-                  <h2 className="text-2xl font-semibold text-white">Safe patterns and auto-fix preview</h2>
-                  <p className="text-sm text-slate-400">Signals we like and the direction the AI patcher wants to take.</p>
-                </div>
-              </div>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {(activeResult?.safe_patterns?.length ? activeResult.safe_patterns : ["No strong safety signal yet"]).map((item) => (
-                  <span key={item} className="rounded-full border border-cyan-400/10 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100">{item}</span>
-                ))}
-              </div>
-              <div className="mt-6 rounded-[20px] border border-white/10 bg-slate-950/70 p-4">
-                <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Auto-fix preview</p>
-                <p className="mt-3 text-sm text-slate-300">{activeResult?.autofix_preview ?? "Run analysis to preview the recommended secure rewrite direction."}</p>
-              </div>
-            </Panel>
           </div>
 
           <div className="space-y-6">
@@ -435,6 +435,25 @@ export default function AnalyzePage() {
                     No dominant issue family detected. This contract currently looks comparatively stable.
                   </div>
                 )}
+              </div>
+            </Panel>
+
+            <Panel className="self-start">
+              <div className="flex items-center gap-3">
+                <CheckBadgeIcon className="h-5 w-5 text-cyan-300" />
+                <div>
+                  <h2 className="text-2xl font-semibold text-white">Safe patterns and auto-fix preview</h2>
+                  <p className="text-sm text-slate-400">Signals we like and the direction the AI patcher wants to take.</p>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {(activeResult?.safe_patterns?.length ? activeResult.safe_patterns : ["No strong safety signal yet"]).map((item) => (
+                  <span key={item} className="rounded-full border border-cyan-400/10 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100">{item}</span>
+                ))}
+              </div>
+              <div className="mt-6 rounded-[20px] border border-white/10 bg-slate-950/70 p-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Auto-fix preview</p>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{activeResult?.autofix_preview ?? "Run analysis to preview the recommended secure rewrite direction."}</p>
               </div>
             </Panel>
           </div>

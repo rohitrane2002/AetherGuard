@@ -116,7 +116,12 @@ export function RiskMeter({ score, compact = false }: { score: number; compact?:
   const label = score >= 70 ? "Critical" : score >= 40 ? "Elevated" : "Stable";
 
   return (
-    <div className={clsx("panel-sheen rounded-[24px] border border-white/10 bg-white/5", compact ? "p-4" : "p-5")}>
+    <div
+      className={clsx(
+        "panel-sheen rounded-[24px] border border-white/10 bg-white/5",
+        compact ? "self-start p-4" : "p-5"
+      )}
+    >
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Risk score</p>
         <span className="text-sm font-medium text-white">{label}</span>
@@ -125,6 +130,7 @@ export function RiskMeter({ score, compact = false }: { score: number; compact?:
         <div className={clsx("h-full rounded-full transition-all", tone)} style={{ width: `${score}%` }} />
       </div>
       <div className={clsx("font-semibold text-white", compact ? "mt-3 text-3xl" : "mt-4 text-4xl")}>{score}</div>
+      {compact ? <p className="mt-2 text-sm text-slate-400">Severity-weighted contract exposure.</p> : null}
     </div>
   );
 }
