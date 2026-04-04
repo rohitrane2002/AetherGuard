@@ -336,7 +336,7 @@ export default function AnalyzePage() {
           />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[0.52fr_0.48fr]">
+        <div className="grid gap-6 xl:grid-cols-[0.56fr_0.44fr]">
           <div className="space-y-6">
             <Panel id="audit-report">
               <div className="flex items-center gap-3">
@@ -381,6 +381,27 @@ export default function AnalyzePage() {
 
             <Panel>
               <div className="flex items-center gap-3">
+                <CheckBadgeIcon className="h-5 w-5 text-cyan-300" />
+                <div>
+                  <h2 className="text-2xl font-semibold text-white">Safe patterns and auto-fix preview</h2>
+                  <p className="text-sm text-slate-400">Signals we like and the direction the AI patcher wants to take.</p>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {(activeResult?.safe_patterns?.length ? activeResult.safe_patterns : ["No strong safety signal yet"]).map((item) => (
+                  <span key={item} className="rounded-full border border-cyan-400/10 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100">{item}</span>
+                ))}
+              </div>
+              <div className="mt-6 rounded-[20px] border border-white/10 bg-slate-950/70 p-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Auto-fix preview</p>
+                <p className="mt-3 text-sm text-slate-300">{activeResult?.autofix_preview ?? "Run analysis to preview the recommended secure rewrite direction."}</p>
+              </div>
+            </Panel>
+          </div>
+
+          <div className="space-y-6">
+            <Panel>
+              <div className="flex items-center gap-3">
                 <ExclamationTriangleIcon className="h-5 w-5 text-cyan-300" />
                 <div>
                   <h2 className="text-2xl font-semibold text-white">Issue families</h2>
@@ -414,25 +435,6 @@ export default function AnalyzePage() {
                     No dominant issue family detected. This contract currently looks comparatively stable.
                   </div>
                 )}
-              </div>
-            </Panel>
-
-            <Panel>
-              <div className="flex items-center gap-3">
-                <CheckBadgeIcon className="h-5 w-5 text-cyan-300" />
-                <div>
-                  <h2 className="text-2xl font-semibold text-white">Safe patterns and auto-fix preview</h2>
-                  <p className="text-sm text-slate-400">Signals we like and the direction the AI patcher wants to take.</p>
-                </div>
-              </div>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {(activeResult?.safe_patterns?.length ? activeResult.safe_patterns : ["No strong safety signal yet"]).map((item) => (
-                  <span key={item} className="rounded-full border border-cyan-400/10 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100">{item}</span>
-                ))}
-              </div>
-              <div className="mt-6 rounded-[20px] border border-white/10 bg-slate-950/70 p-4">
-                <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Auto-fix preview</p>
-                <p className="mt-3 text-sm text-slate-300">{activeResult?.autofix_preview ?? "Run analysis to preview the recommended secure rewrite direction."}</p>
               </div>
             </Panel>
           </div>
