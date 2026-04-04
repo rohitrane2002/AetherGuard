@@ -301,8 +301,8 @@ export default function AnalyzePage() {
           fixing={fixing}
         />
 
-        <div className="grid items-start gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-          <div className="space-y-6">
+        <div className="space-y-6">
+          <div>
             <Panel className="space-y-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -363,31 +363,30 @@ export default function AnalyzePage() {
                 </div>
               </div>
             </Panel>
-
-            <div className="grid items-start gap-6 xl:grid-cols-2">
-              <ScanProgressPanel
-                steps={buildProgressSteps(scanStepIndex, fullScanSteps, !loading && Boolean(result))}
-                progress={scanProgress}
-              />
-              <ScanProgressPanel
-                steps={buildProgressSteps(liveStepIndex, liveScanSteps, !liveLoading && Boolean(liveResult))}
-                progress={liveProgress}
-                live
-              />
-            </div>
           </div>
 
-          <CopilotPanel
-            messages={copilotMessages}
-            input={chatInput}
-            onInputChange={setChatInput}
-            onSend={sendCopilot}
-            onQuickPrompt={(prompt) => {
-              setChatInput("");
-              void streamCopilot(prompt);
-            }}
-            sending={sending}
-          />
+          <div className="grid items-start gap-6 xl:grid-cols-[0.34fr_0.34fr_0.32fr]">
+            <ScanProgressPanel
+              steps={buildProgressSteps(scanStepIndex, fullScanSteps, !loading && Boolean(result))}
+              progress={scanProgress}
+            />
+            <ScanProgressPanel
+              steps={buildProgressSteps(liveStepIndex, liveScanSteps, !liveLoading && Boolean(liveResult))}
+              progress={liveProgress}
+              live
+            />
+            <CopilotPanel
+              messages={copilotMessages}
+              input={chatInput}
+              onInputChange={setChatInput}
+              onSend={sendCopilot}
+              onQuickPrompt={(prompt) => {
+                setChatInput("");
+                void streamCopilot(prompt);
+              }}
+              sending={sending}
+            />
+          </div>
         </div>
 
         <div className="grid items-start gap-6 xl:grid-cols-[0.58fr_0.42fr]">
