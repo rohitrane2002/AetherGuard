@@ -16,7 +16,7 @@ import CopilotPanel from "../components/analyze/CopilotPanel";
 import ScanProgressPanel from "../components/analyze/ScanProgressPanel";
 import { buildLineInsights } from "../components/analyze/editorInsights";
 import type { AnalysisResult, CopilotMessage } from "../components/analyze/types";
-import { Button, Panel, RiskMeter, SectionHeading, StatCard } from "../components/ui";
+import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
 
@@ -301,15 +301,50 @@ export default function AnalyzePage() {
           fixing={fixing}
         />
 
-        <div className="grid items-start gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+        <div className="grid items-start gap-6 xl:grid-cols-[1.08fr_0.92fr]">
           <div className="space-y-6">
-            <div className="grid items-start gap-4 xl:grid-cols-[0.74fr_1.26fr]">
-              <RiskMeter score={activeResult?.risk_score ?? 0} compact />
-              <Panel className="self-start space-y-4">
+            <Panel className="space-y-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Issue counts</p>
-                  <h2 className="mt-2 text-xl font-semibold text-white">Security posture</h2>
+                  <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Threat snapshot</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">Security posture</h2>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-400">
+                    Executive-grade risk framing for the active contract, tuned for engineers, founders, and security reviewers.
+                  </p>
                 </div>
+                <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
+                  {activeResult ? `${activeResult.prediction} risk profile` : "Waiting for scan signal"}
+                </div>
+              </div>
+
+              <div className="grid items-start gap-4 xl:grid-cols-[0.84fr_1.16fr]">
+                <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Risk score</p>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-white">
+                      {activeResult?.risk_score ?? 0 >= 70 ? "Critical" : activeResult?.risk_score ?? 0 >= 40 ? "Elevated" : "Stable"}
+                    </span>
+                  </div>
+                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-950/90">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        (activeResult?.risk_score ?? 0) >= 70
+                          ? "bg-gradient-to-r from-rose-400 via-rose-500 to-blue-950"
+                          : (activeResult?.risk_score ?? 0) >= 40
+                          ? "bg-gradient-to-r from-amber-300 via-amber-400 to-slate-900"
+                          : "bg-gradient-to-r from-emerald-300 via-cyan-400 to-slate-900"
+                      }`}
+                      style={{ width: `${activeResult?.risk_score ?? 0}%` }}
+                    />
+                  </div>
+                  <div className="mt-5 flex items-end justify-between gap-4">
+                    <div className="text-6xl font-semibold tracking-tight text-white">{activeResult?.risk_score ?? 0}</div>
+                    <div className="max-w-[12rem] text-right text-sm leading-6 text-slate-400">
+                      Weighted contract exposure across exploitable flows, privilege surfaces, and arithmetic hygiene.
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid gap-3 md:grid-cols-3">
                   {[
                     ["critical", issueCounts.critical, "Funds-at-risk paths"],
@@ -318,16 +353,16 @@ export default function AnalyzePage() {
                   ].map(([label, value, helper]) => (
                     <div
                       key={label}
-                      className={`rounded-[22px] border p-4 ${countTone[label as "critical" | "high" | "medium"]}`}
+                      className={`rounded-[24px] border p-5 ${countTone[label as "critical" | "high" | "medium"]}`}
                     >
                       <p className="text-[11px] uppercase tracking-[0.26em] text-slate-300">{label}</p>
-                      <div className="mt-4 text-4xl font-semibold text-white">{value}</div>
-                      <p className="mt-3 text-sm leading-6 text-slate-300/85">{helper}</p>
+                      <div className="mt-5 text-5xl font-semibold leading-none text-white">{value}</div>
+                      <p className="mt-4 text-sm leading-6 text-slate-300/85">{helper}</p>
                     </div>
                   ))}
                 </div>
-              </Panel>
-            </div>
+              </div>
+            </Panel>
 
             <div className="grid items-start gap-6 xl:grid-cols-2">
               <ScanProgressPanel
@@ -357,7 +392,7 @@ export default function AnalyzePage() {
 
         <div className="grid items-start gap-6 xl:grid-cols-[0.58fr_0.42fr]">
           <div className="space-y-6">
-            <Panel id="audit-report">
+            <Panel id="audit-report" className="self-start">
               <div className="flex items-center gap-3">
                 <CodeBracketSquareIcon className="h-5 w-5 text-cyan-300" />
                 <div>
