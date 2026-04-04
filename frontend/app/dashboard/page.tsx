@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   BellAlertIcon,
-  ChartBarIcon,
   ChatBubbleBottomCenterTextIcon,
   KeyIcon,
   ShieldExclamationIcon,
@@ -198,82 +197,158 @@ export default function DashboardPage() {
               </Panel>
             ) : null}
 
-            <div className="grid items-start gap-6 xl:grid-cols-[1.14fr_0.86fr]">
-              <Panel className="space-y-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Operations overview</p>
-                    <h2 className="mt-2 text-3xl font-semibold text-white">Security command center</h2>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
-                      Live intelligence over recent scans, workspace health, subscription posture, and active contract risk.
-                    </p>
+            <Panel className="overflow-hidden p-0">
+              <div className="grid items-stretch xl:grid-cols-[1.18fr_0.82fr]">
+                <div className="space-y-6 p-8">
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
+                      Operations overview
+                    </div>
+                    <div className="space-y-3">
+                      <h2 className="max-w-3xl text-4xl font-semibold tracking-tight text-white md:text-5xl">
+                        Command your smart contract risk with one clean control plane.
+                      </h2>
+                      <p className="max-w-2xl text-base leading-8 text-slate-400">
+                        Recent scans, unread alerts, API access, workspace momentum, and AI guidance all live in one structured operating surface.
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4">
-                    <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">Latest signal</p>
-                    <p className="mt-2 text-lg font-semibold text-white">
-                      {latestScan ? `${latestScan.prediction} · ${latestScan.risk_score}/100` : "Awaiting telemetry"}
-                    </p>
-                    <p className="mt-2 max-w-[14rem] text-sm text-slate-400">
-                      {latestScan ? latestScan.contract_snippet : "Run a scan to seed this workspace with fresh telemetry."}
-                    </p>
+
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
+                    <StatCard
+                      label="Usage Today"
+                      value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
+                      helper={`${summary.usage.remaining_today} scans remaining`}
+                      accent="violet"
+                    />
+                    <StatCard
+                      label="Unread Alerts"
+                      value={String(summary.workspace.notification_metrics?.unread ?? summary.notifications.length)}
+                      helper="Platform intelligence waiting"
+                      accent="rose"
+                    />
+                    <StatCard
+                      label="Workspace"
+                      value={summary.workspace.team_name}
+                      helper={`${summary.workspace.members} members · ${summary.workspace.role}`}
+                      accent="emerald"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+                    <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Latest signal</p>
+                          <h3 className="mt-2 text-2xl font-semibold text-white">
+                            {latestScan ? `${latestScan.prediction} detection` : "Awaiting first scan"}
+                          </h3>
+                        </div>
+                        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white">
+                          {latestScan ? `${latestScan.risk_score}/100` : "--"}
+                        </div>
+                      </div>
+                      <p className="mt-4 text-sm leading-7 text-slate-400">
+                        {latestScan ? latestScan.contract_snippet : "Run a live scan to seed the command center with contract telemetry."}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Portfolio exposure</p>
+                          <h3 className="mt-2 text-xl font-semibold text-white">
+                            {averageRisk >= 70 ? "Critical" : averageRisk >= 40 ? "Elevated" : "Stable"} posture
+                          </h3>
+                        </div>
+                        <div className="text-5xl font-semibold tracking-tight text-white">{averageRisk}</div>
+                      </div>
+                      <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-950/90">
+                        <div
+                          className={`h-full rounded-full ${
+                            averageRisk >= 70
+                              ? "bg-gradient-to-r from-rose-400 via-rose-500 to-blue-950"
+                              : averageRisk >= 40
+                              ? "bg-gradient-to-r from-amber-300 via-amber-400 to-slate-900"
+                              : "bg-gradient-to-r from-emerald-300 via-cyan-400 to-slate-900"
+                          }`}
+                          style={{ width: `${averageRisk}%` }}
+                        />
+                      </div>
+                      <p className="mt-4 text-sm leading-7 text-slate-400">
+                        Average risk across the latest contract telemetry in this workspace.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
-                  <StatCard
-                    label="Usage Today"
-                    value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
-                    helper={`${summary.usage.remaining_today} scans remaining`}
-                    accent="violet"
-                  />
-                  <StatCard
-                    label="Recent Alerts"
-                    value={String(summary.workspace.notification_metrics?.unread ?? summary.notifications.length)}
-                    helper="Unread platform intelligence"
-                    accent="rose"
-                  />
-                  <StatCard
-                    label="Workspace"
-                    value={`${summary.workspace.members} member`}
-                    helper={`${summary.workspace.team_name} · ${summary.workspace.role}`}
-                    accent="emerald"
-                  />
-                </div>
-              </Panel>
-
-              <Panel className="space-y-5 self-start">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Risk posture</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">Portfolio exposure</h2>
+                <div className="border-t border-white/10 bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8 xl:border-l xl:border-t-0">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-cyan-300" />
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">AI Security Copilot</p>
+                        <h3 className="mt-1 text-2xl font-semibold text-white">Ask, patch, and explain</h3>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "Explain the last critical issue",
+                        "Give me the minimum safe patch",
+                        "Summarize recent scan posture",
+                      ].map((prompt) => (
+                        <button
+                          key={prompt}
+                          onClick={() => setChatInput(prompt)}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 transition hover:border-cyan-400/20 hover:bg-cyan-500/10 hover:text-white"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="scrollbar-thin h-[14rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+                      {chatMessages.length === 0 ? (
+                        <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
+                          Ask for vulnerability explanations, secure rewrites, or exploit narratives.
+                        </div>
+                      ) : (
+                        chatMessages.map((message, index) => (
+                          <div
+                            key={`${message.role}-${index}`}
+                            className={`rounded-[20px] p-4 text-sm ${
+                              message.role === "assistant"
+                                ? "border border-cyan-400/10 bg-cyan-500/10 text-cyan-50"
+                                : "border border-white/10 bg-white/5 text-slate-100"
+                            }`}
+                          >
+                            <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-slate-400">{message.role}</p>
+                            <p className="whitespace-pre-wrap">{message.content || "Thinking..."}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <textarea
+                      value={chatInput}
+                      onChange={(event) => setChatInput(event.target.value)}
+                      className="h-20 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
+                      placeholder="Explain the last critical issue and give me a secure Solidity patch."
+                    />
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-2 text-xs text-slate-400">
+                        <ShieldExclamationIcon className="h-4 w-4 text-cyan-300" />
+                        Context-aware across recent scans
+                      </div>
+                      <Button onClick={sendChat} disabled={sending}>
+                        {sending ? "Streaming..." : "Send to Copilot"}
+                      </Button>
+                    </div>
                   </div>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white">
-                    {averageRisk >= 70 ? "Critical" : averageRisk >= 40 ? "Elevated" : "Stable"}
-                  </span>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-slate-950/90">
-                  <div
-                    className={`h-full rounded-full ${
-                      averageRisk >= 70
-                        ? "bg-gradient-to-r from-rose-400 via-rose-500 to-blue-950"
-                        : averageRisk >= 40
-                        ? "bg-gradient-to-r from-amber-300 via-amber-400 to-slate-900"
-                        : "bg-gradient-to-r from-emerald-300 via-cyan-400 to-slate-900"
-                    }`}
-                    style={{ width: `${averageRisk}%` }}
-                  />
-                </div>
-                <div className="flex items-end justify-between gap-4">
-                  <div className="text-6xl font-semibold tracking-tight text-white">{averageRisk}</div>
-                  <p className="max-w-[13rem] text-right text-sm leading-6 text-slate-400">
-                    Average risk across the most recent contract telemetry in this workspace.
-                  </p>
-                </div>
-              </Panel>
-            </div>
+              </div>
+            </Panel>
 
-            <div className="grid items-start gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <div className="grid items-start gap-6 xl:grid-cols-[1.06fr_0.94fr]">
               <div className="space-y-6">
                 <Panel>
                   <div className="flex items-center justify-between">
@@ -283,19 +358,19 @@ export default function DashboardPage() {
                     </div>
                     <Button tone="ghost" onClick={loadDashboard}>Refresh</Button>
                   </div>
-                  <div className="mt-5 grid gap-3 xl:grid-cols-2">
+                  <div className="mt-5 space-y-3">
                     {summary.recent_scans.map((scan) => (
-                      <div key={scan.id} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                      <div key={scan.id} className="rounded-[22px] border border-white/10 bg-white/5 p-5">
                         <div className="flex items-start justify-between gap-4">
-                          <div>
+                          <div className="space-y-2">
                             <p className="text-sm font-semibold text-white">
                               Scan #{scan.id} · {scan.prediction}
                             </p>
-                            <p className="mt-2 max-w-2xl text-sm text-slate-400">{scan.contract_snippet}</p>
+                            <p className="max-w-3xl text-sm leading-7 text-slate-400">{scan.contract_snippet}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Risk</p>
-                            <p className="text-2xl font-semibold text-white">{scan.risk_score}</p>
+                          <div className="rounded-[18px] border border-white/10 bg-slate-950/60 px-4 py-3 text-right">
+                            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Risk</p>
+                            <p className="mt-2 text-3xl font-semibold text-white">{scan.risk_score}</p>
                           </div>
                         </div>
                       </div>
@@ -303,58 +378,13 @@ export default function DashboardPage() {
                   </div>
                 </Panel>
 
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <Panel>
-                    <div className="flex items-center gap-3">
-                      <BellAlertIcon className="h-5 w-5 text-cyan-300" />
-                      <h2 className="text-xl font-semibold text-white">Alerts</h2>
-                    </div>
-                    <div className="mt-5 space-y-3">
-                      {summary.notifications.map((item) => (
-                        <div key={item.id} className="rounded-[20px] border border-white/10 bg-white/5 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-white">{item.title}</p>
-                            {!item.is_read ? (
-                              <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-cyan-200">
-                                New
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-2 text-sm text-slate-400">{item.body}</p>
-                          <p className="mt-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
-                            {item.category} · {new Date(item.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </Panel>
-
-                  <Panel>
-                    <div className="flex items-center gap-3">
-                      <UserGroupIcon className="h-5 w-5 text-violet-300" />
-                      <h2 className="text-xl font-semibold text-white">Workspace</h2>
-                    </div>
-                    <div className="mt-5 space-y-4">
-                      <StatCard
-                        label="Team"
-                        value={summary.workspace.team_name}
-                        helper={`${summary.workspace.members} member · ${summary.workspace.shared_reports} shared reports`}
-                        accent="violet"
-                      />
-                      <p className="text-sm text-slate-400">
-                        Shared audit reporting, role-aware visibility, and B2B workspace mode are now backed by live team records.
-                      </p>
-                      <Button tone="ghost" onClick={() => (window.location.href = "/workspace")}>
-                        Open workspace controls
-                      </Button>
-                    </div>
-                  </Panel>
-                </div>
-
                 <Panel>
                   <div className="flex items-center gap-3">
                     <KeyIcon className="h-5 w-5 text-amber-300" />
-                    <h2 className="text-xl font-semibold text-white">Developer API keys</h2>
+                    <div>
+                      <h2 className="text-xl font-semibold text-white">Developer API keys</h2>
+                      <p className="text-sm text-slate-400">Issue production credentials for custom integrations and CI pipelines.</p>
+                    </div>
                   </div>
                   <div className="mt-5 flex flex-wrap gap-3">
                     <input
@@ -405,76 +435,43 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-6">
-                <Panel className="space-y-5 self-start">
+                <Panel>
                   <div className="flex items-center gap-3">
-                    <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-cyan-300" />
+                    <BellAlertIcon className="h-5 w-5 text-cyan-300" />
                     <div>
-                      <h2 className="text-2xl font-semibold text-white">AI Security Copilot</h2>
-                      <p className="text-sm text-slate-400">Context-aware guidance over your latest contract activity.</p>
+                      <h2 className="text-xl font-semibold text-white">Alerts</h2>
+                      <p className="text-sm text-slate-400">Unread platform intelligence, surfaced as an operator feed.</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      "Explain the last critical issue",
-                      "Give me the minimum safe patch",
-                      "Summarize recent scan posture",
-                    ].map((prompt) => (
-                      <button
-                        key={prompt}
-                        onClick={() => setChatInput(prompt)}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 transition hover:border-cyan-400/20 hover:bg-cyan-500/10 hover:text-white"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="scrollbar-thin h-[16rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
-                    {chatMessages.length === 0 ? (
-                      <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
-                        Ask for vulnerability explanations, secure rewrites, or exploit narratives.
-                      </div>
-                    ) : (
-                      chatMessages.map((message, index) => (
-                        <div
-                          key={`${message.role}-${index}`}
-                          className={`rounded-[20px] p-4 text-sm ${
-                            message.role === "assistant"
-                              ? "border border-cyan-400/10 bg-cyan-500/10 text-cyan-50"
-                              : "border border-white/10 bg-white/5 text-slate-100"
-                          }`}
-                        >
-                          <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-slate-400">{message.role}</p>
-                          <p className="whitespace-pre-wrap">{message.content || "Thinking..."}</p>
+                  <div className="mt-5 space-y-3">
+                    {summary.notifications.map((item) => (
+                      <div key={item.id} className="rounded-[20px] border border-white/10 bg-white/5 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-white">{item.title}</p>
+                          {!item.is_read ? (
+                            <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-cyan-200">
+                              New
+                            </span>
+                          ) : null}
                         </div>
-                      ))
-                    )}
-                  </div>
-                  <textarea
-                    value={chatInput}
-                    onChange={(event) => setChatInput(event.target.value)}
-                    className="h-20 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
-                    placeholder="Explain the last critical issue and give me a secure Solidity patch."
-                  />
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-2 text-xs text-slate-400">
-                      <ShieldExclamationIcon className="h-4 w-4 text-cyan-300" />
-                      Context-aware across recent scans
-                    </div>
-                    <Button onClick={sendChat} disabled={sending}>
-                      {sending ? "Streaming..." : "Send to Copilot"}
-                    </Button>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">{item.body}</p>
+                        <p className="mt-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                          {item.category} · {new Date(item.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </Panel>
 
-                <Panel className="space-y-4 self-start">
+                <Panel>
                   <div className="flex items-center gap-3">
-                    <ChartBarIcon className="h-5 w-5 text-violet-300" />
+                    <UserGroupIcon className="h-5 w-5 text-violet-300" />
                     <div>
                       <h2 className="text-xl font-semibold text-white">Workspace momentum</h2>
-                      <p className="text-sm text-slate-400">High-level operational context for the active team.</p>
+                      <p className="text-sm text-slate-400">Role-aware team context for your active security workspace.</p>
                     </div>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
                     <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
                       <p className="text-[11px] uppercase tracking-[0.26em] text-slate-400">Members</p>
                       <div className="mt-3 text-4xl font-semibold text-white">{summary.workspace.members}</div>
@@ -489,6 +486,17 @@ export default function DashboardPage() {
                       <p className="text-[11px] uppercase tracking-[0.26em] text-slate-400">Shared reports</p>
                       <div className="mt-3 text-4xl font-semibold text-white">{summary.workspace.shared_reports}</div>
                     </div>
+                  </div>
+                  <div className="mt-5 flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-white/5 p-5">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{summary.workspace.team_name}</p>
+                      <p className="mt-2 text-sm text-slate-400">
+                        {summary.workspace.members} members · {summary.workspace.shared_reports} shared reports · role {summary.workspace.role}
+                      </p>
+                    </div>
+                    <Button tone="ghost" onClick={() => (window.location.href = "/workspace")}>
+                      Open workspace
+                    </Button>
                   </div>
                 </Panel>
               </div>
