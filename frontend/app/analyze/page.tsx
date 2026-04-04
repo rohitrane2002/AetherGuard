@@ -278,33 +278,33 @@ export default function AnalyzePage() {
           <StatCard label="Current plan" value={activeResult ? `${activeResult.risk_score}/100` : "--"} helper="Security score across the active contract" accent="amber" />
         </div>
 
-        <div className="grid items-start gap-6 xl:grid-cols-[1.14fr_0.86fr]">
-          <ContractEditorPanel
-            code={code}
-            onChange={(value) => {
-              setCode(value);
-              setSelectedLine(null);
-            }}
-            loading={loading}
-            liveLoading={liveLoading}
-            insights={lineInsights}
-            selectedLine={selectedLine}
-            onSelectLine={setSelectedLine}
-            onAnalyze={analyze}
-            onFix={fixContract}
-            onExport={() => exportPdf("audit-report")}
-            fixing={fixing}
-          />
+        <ContractEditorPanel
+          code={code}
+          onChange={(value) => {
+            setCode(value);
+            setSelectedLine(null);
+          }}
+          loading={loading}
+          liveLoading={liveLoading}
+          insights={lineInsights}
+          selectedLine={selectedLine}
+          onSelectLine={setSelectedLine}
+          onAnalyze={analyze}
+          onFix={fixContract}
+          onExport={() => exportPdf("audit-report")}
+          fixing={fixing}
+        />
 
+        <div className="grid gap-6 xl:grid-cols-[0.44fr_0.56fr]">
           <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-[0.82fr_1.18fr]">
+            <div className="grid gap-4 md:grid-cols-[0.72fr_1.28fr]">
               <RiskMeter score={activeResult?.risk_score ?? 0} compact />
               <Panel className="space-y-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Issue counts</p>
                   <h2 className="mt-2 text-xl font-semibold text-white">Security posture</h2>
                 </div>
-                <div className="grid gap-3">
+                <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
                   <StatCard label="Critical" value={String(issueCounts.critical)} helper="Funds-at-risk paths" accent="rose" />
                   <StatCard label="High" value={String(issueCounts.high)} helper="Privilege or treasury issues" accent="amber" />
                   <StatCard label="Medium" value={String(issueCounts.medium)} helper="Arithmetic or hygiene concerns" accent="emerald" />
@@ -312,22 +312,6 @@ export default function AnalyzePage() {
               </Panel>
             </div>
 
-            <CopilotPanel
-              messages={copilotMessages}
-              input={chatInput}
-              onInputChange={setChatInput}
-              onSend={sendCopilot}
-              onQuickPrompt={(prompt) => {
-                setChatInput("");
-                void streamCopilot(prompt);
-              }}
-              sending={sending}
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[0.52fr_0.48fr]">
-          <div className="space-y-6">
             <ScanProgressPanel
               steps={buildProgressSteps(scanStepIndex, fullScanSteps, !loading && Boolean(result))}
               progress={scanProgress}
@@ -339,6 +323,20 @@ export default function AnalyzePage() {
             />
           </div>
 
+          <CopilotPanel
+            messages={copilotMessages}
+            input={chatInput}
+            onInputChange={setChatInput}
+            onSend={sendCopilot}
+            onQuickPrompt={(prompt) => {
+              setChatInput("");
+              void streamCopilot(prompt);
+            }}
+            sending={sending}
+          />
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[0.52fr_0.48fr]">
           <div className="space-y-6">
             <Panel id="audit-report">
               <div className="flex items-center gap-3">
