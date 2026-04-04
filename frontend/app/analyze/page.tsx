@@ -1,48 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BoltIcon,
   CheckBadgeIcon,
   CodeBracketSquareIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
-  SparklesIcon,
   WrenchScrewdriverIcon,
 } from "@heroicons/react/24/solid";
 import toast, { Toaster } from "react-hot-toast";
 import AppShell from "../components/AppShell";
 import { exportPdf } from "../components/PdfExporter";
+import ContractEditorPanel from "../components/analyze/ContractEditorPanel";
+import CopilotPanel from "../components/analyze/CopilotPanel";
+import ScanProgressPanel from "../components/analyze/ScanProgressPanel";
+import { buildLineInsights } from "../components/analyze/editorInsights";
+import type { AnalysisResult, CopilotMessage } from "../components/analyze/types";
 import { Button, Panel, RiskMeter, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
-
-type AnalysisResult = {
-  prediction: string;
-  prob_secure: number;
-  prob_vulnerable: number;
-  email: string;
-  log_id: number;
-  model_source: string;
-  confidence: number;
-  remaining_today: number;
-  risk_score: number;
-  findings: Array<{
-    slug: string;
-    label: string;
-    severity: string;
-    confidence: number;
-    summary: string;
-    recommendation: string;
-  }>;
-  safe_patterns: string[];
-  summary: string;
-  fix_suggestions: string[];
-  autofix_preview: string;
-};
 
 const STARTER_CONTRACT = `pragma solidity ^0.8.20;
 
@@ -68,6 +47,31 @@ const severityTone: Record<string, string> = {
   low: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
 };
 
+const fullScanSteps = [
+  ["Analyzing contract", "Parsing Solidity and building execution graph."],
+  ["Checking reentrancy", "Inspecting external calls against state mutation order."],
+  ["Detecting vulnerabilities", "Combining heuristics with model classification."],
+  ["Preparing remediation", "Building the summary, fixes, and PDF-ready report."],
+] as const;
+
+const liveScanSteps = [
+  ["Watching code changes", "Debounced live scanner monitoring the current buffer."],
+  ["Checking reentrancy", "Looking for external-call patterns in active functions."],
+  ["Refreshing issue rail", "Updating score and vulnerability clusters in the workspace."],
+] as const;
+
+function buildProgressSteps(
+  progressIndex: number,
+  items: readonly (readonly [string, string])[],
+  complete: boolean
+) {
+  return items.map(([label, detail], index) => ({
+    label,
+    detail,
+    state: complete || progressIndex > index ? "done" : progressIndex === index ? "active" : "waiting",
+  })) as Array<{ label: string; detail: string; state: "waiting" | "active" | "done" }>;
+}
+
 export default function AnalyzePage() {
   const { ready } = useProtectedRoute();
   const [code, setCode] = useState(STARTER_CONTRACT);
@@ -76,8 +80,14 @@ export default function AnalyzePage() {
   const [loading, setLoading] = useState(false);
   const [liveLoading, setLiveLoading] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [copilotMessages, setCopilotMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [copilotMessages, setCopilotMessages] = useState<CopilotMessage[]>([]);
   const [fixing, setFixing] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  const [lastFixedCode, setLastFixedCode] = useState<string | null>(null);
+  const [scanStepIndex, setScanStepIndex] = useState(-1);
+  const [liveStepIndex, setLiveStepIndex] = useState(-1);
+  const lastCriticalToast = useRef<string | null>(null);
 
   const runAnalysis = async (source: string, live = false) => {
     const response = await authFetch(`${API_BASE_URL}${live ? "/analyze/live" : "/analyze/"}`, {
@@ -102,6 +112,7 @@ export default function AnalyzePage() {
       if (!code.trim()) return;
       try {
         setLiveLoading(true);
+        setLiveStepIndex(0);
         const data = await runAnalysis(code, true);
         if (data) setLiveResult(data);
       } catch (error) {
@@ -109,9 +120,33 @@ export default function AnalyzePage() {
       } finally {
         setLiveLoading(false);
       }
-    }, 500);
+    }, 550);
     return () => clearTimeout(timer);
   }, [code, ready]);
+
+  useEffect(() => {
+    if (!loading) {
+      setScanStepIndex(-1);
+      return;
+    }
+    setScanStepIndex(0);
+    const timer = window.setInterval(() => {
+      setScanStepIndex((current) => Math.min(current + 1, fullScanSteps.length - 1));
+    }, 720);
+    return () => window.clearInterval(timer);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!liveLoading) {
+      setLiveStepIndex(-1);
+      return;
+    }
+    setLiveStepIndex(0);
+    const timer = window.setInterval(() => {
+      setLiveStepIndex((current) => Math.min(current + 1, liveScanSteps.length - 1));
+    }, 520);
+    return () => window.clearInterval(timer);
+  }, [liveLoading]);
 
   const analyze = async () => {
     try {
@@ -129,6 +164,7 @@ export default function AnalyzePage() {
   };
 
   const fixContract = async () => {
+    const originalCode = code;
     try {
       setFixing(true);
       const response = await authFetch(`${API_BASE_URL}/fix-contract`, {
@@ -145,21 +181,24 @@ export default function AnalyzePage() {
         toast.error(data.detail || "Fix generation failed");
         return;
       }
+      setLastFixedCode(data.fixed_code);
       setCode(data.fixed_code);
       setCopilotMessages((current) => [
         ...current,
         { role: "assistant", content: `${data.summary}\n\nChanges:\n- ${data.highlighted_changes.join("\n- ")}` },
       ]);
+      const changedLineIndex = data.fixed_code
+        .split("\n")
+        .findIndex((line: string, index: number) => line !== (originalCode.split("\n")[index] ?? ""));
+      setSelectedLine(changedLineIndex >= 0 ? changedLineIndex + 1 : null);
       toast.success("Fix suggestions applied to workspace");
     } finally {
       setFixing(false);
     }
   };
 
-  const sendCopilot = async () => {
-    if (!chatInput.trim()) return;
-    const prompt = chatInput.trim();
-    setChatInput("");
+  const streamCopilot = async (prompt: string) => {
+    setSending(true);
     setCopilotMessages((current) => [...current, { role: "user", content: prompt }, { role: "assistant", content: "" }]);
     const response = await authFetch(`${API_BASE_URL}/chat/stream`, {
       method: "POST",
@@ -167,6 +206,7 @@ export default function AnalyzePage() {
       body: JSON.stringify({ message: `${prompt}\n\nCurrent contract:\n${code}` }),
     });
     if (!response.ok || !response.body) {
+      setSending(false);
       toast.error("Copilot unavailable");
       return;
     }
@@ -183,9 +223,31 @@ export default function AnalyzePage() {
         return next;
       });
     }
+    setSending(false);
+  };
+
+  const sendCopilot = async () => {
+    if (!chatInput.trim()) return;
+    const prompt = chatInput.trim();
+    setChatInput("");
+    await streamCopilot(prompt);
   };
 
   const activeResult = result ?? liveResult;
+  const lineInsights = useMemo(
+    () => buildLineInsights(code, activeResult?.findings ?? [], lastFixedCode),
+    [code, activeResult?.findings, lastFixedCode]
+  );
+
+  useEffect(() => {
+    if (!activeResult || activeResult.risk_score < 70 || !activeResult.findings.length) return;
+    const topFinding = activeResult.findings[0];
+    const toastKey = `${activeResult.log_id}:${topFinding.slug}:${activeResult.risk_score}`;
+    if (lastCriticalToast.current === toastKey) return;
+    lastCriticalToast.current = toastKey;
+    toast.error(`Critical vulnerability detected: ${topFinding.label}`);
+  }, [activeResult]);
+
   const issueCounts = useMemo(() => {
     const findings = activeResult?.findings ?? [];
     return {
@@ -196,101 +258,55 @@ export default function AnalyzePage() {
   }, [activeResult]);
 
   const confidenceLabel = activeResult ? `${Math.round(activeResult.confidence * 100)}%` : "--";
+  const scanProgress = loading ? Math.round(((scanStepIndex + 1) / fullScanSteps.length) * 100) : result ? 100 : 0;
+  const liveProgress = liveLoading ? Math.round(((liveStepIndex + 1) / liveScanSteps.length) * 100) : liveResult ? 100 : 0;
 
   return (
     <AppShell>
       <Toaster position="top-right" />
-      <div className="mx-auto max-w-[1500px] space-y-6">
+      <div className="mx-auto max-w-[1520px] space-y-6">
         <SectionHeading
           eyebrow="AI Workspace"
-          title="Scan, fix, and ship contracts inside a real-time security command deck."
-          subtitle="AetherGuard now treats analysis like a live mission surface: instant signals while typing, structured risk telemetry, and a streaming copilot that stays anchored to the contract in front of you."
+          title="Scan, explain, and secure contracts in one premium command deck."
+          subtitle="AetherGuard now treats analysis like a live engineering workflow: structured scan phases, line-level risk guidance, a short-form AI explainer, and audit outputs designed for real production use."
         />
 
         <div className="grid gap-4 lg:grid-cols-4">
           <StatCard label="Live posture" value={activeResult?.prediction ?? "watching"} helper={liveLoading ? "Refreshing signals..." : "Real-time scanner online"} />
           <StatCard label="Confidence" value={confidenceLabel} helper="Model certainty on active context" accent="violet" />
           <StatCard label="Remaining scans" value={activeResult ? String(activeResult.remaining_today) : "--"} helper="Daily premium allowance" accent="emerald" />
-          <StatCard label="Model source" value={activeResult?.model_source?.split(":")[0] ?? "lightweight"} helper={activeResult?.model_source ?? "Awaiting analysis"} accent="amber" />
+          <StatCard label="Current plan" value={activeResult ? `${activeResult.risk_score}/100` : "--"} helper="Security score across the active contract" accent="amber" />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.46fr_0.79fr]">
-          <Panel className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Contract editor</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Mission control</h2>
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300">
-                <BoltIcon className="h-4 w-4 text-cyan-300" />
-                {liveLoading ? "Refreshing live feedback..." : "Live feedback online"}
-              </div>
-            </div>
-
-            <div className="panel-sheen rounded-[28px] border border-white/10 bg-slate-950/80">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.28em] text-slate-500">
-                <span>Solidity editor</span>
-                <span>{code.length} chars</span>
-              </div>
-              <div className="grid grid-cols-[56px_1fr]">
-                <div className="border-r border-white/10 px-3 py-4 text-right text-xs leading-6 text-slate-600">
-                  {code.split("\n").map((_, index) => (
-                    <div key={index}>{index + 1}</div>
-                  ))}
-                </div>
-                <textarea
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
-                  className="scrollbar-thin h-[40rem] resize-none bg-transparent px-4 py-4 font-mono text-sm leading-6 text-slate-100 outline-none"
-                  spellCheck={false}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={analyze} disabled={loading}>{loading ? "Analyzing..." : "Run premium audit"}</Button>
-              <Button tone="ghost" onClick={fixContract} disabled={fixing}>{fixing ? "Drafting fix..." : "Fix my contract"}</Button>
-              <Button tone="ghost" onClick={() => exportPdf("audit-report")}>Download PDF report</Button>
-            </div>
-          </Panel>
+        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.45fr_0.78fr]">
+          <ContractEditorPanel
+            code={code}
+            onChange={(value) => {
+              setCode(value);
+              setSelectedLine(null);
+            }}
+            loading={loading}
+            liveLoading={liveLoading}
+            insights={lineInsights}
+            selectedLine={selectedLine}
+            onSelectLine={setSelectedLine}
+            onAnalyze={analyze}
+            onFix={fixContract}
+            onExport={() => exportPdf("audit-report")}
+            fixing={fixing}
+          />
 
           <div className="space-y-4">
             <RiskMeter score={activeResult?.risk_score ?? 0} />
-
-            <Panel className="space-y-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Live issue rail</p>
-                <h2 className="mt-2 text-xl font-semibold text-white">Immediate signals</h2>
-              </div>
-              <div className="space-y-3">
-                {activeResult?.findings?.length ? (
-                  activeResult.findings.slice(0, 3).map((item) => (
-                    <div key={item.slug} className={`rounded-[22px] border p-4 ${severityTone[item.severity] ?? "border-white/10 bg-white/5 text-slate-100"}`}>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold">{item.label}</p>
-                        <span className="text-xs uppercase tracking-[0.24em] opacity-80">{item.severity}</span>
-                      </div>
-                      <p className="mt-2 text-sm opacity-90">{item.summary}</p>
-                    </div>
-                  ))
-                ) : (
-                  <>
-                    <div className="rounded-[22px] border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">
-                      <div className="flex gap-3">
-                        <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-                        <p>Possible reentrancy risk if state changes follow external calls.</p>
-                      </div>
-                    </div>
-                    <div className="rounded-[22px] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-                      <div className="flex gap-3">
-                        <ShieldCheckIcon className="mt-0.5 h-5 w-5 shrink-0" />
-                        <p>Compiler-level overflow protection is a positive signal under Solidity ^0.8.x.</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </Panel>
+            <ScanProgressPanel
+              steps={buildProgressSteps(scanStepIndex, fullScanSteps, !loading && Boolean(result))}
+              progress={scanProgress}
+            />
+            <ScanProgressPanel
+              steps={buildProgressSteps(liveStepIndex, liveScanSteps, !liveLoading && Boolean(liveResult))}
+              progress={liveProgress}
+              live
+            />
 
             <div className="grid gap-4">
               <StatCard label="Critical" value={String(issueCounts.critical)} helper="Funds-at-risk paths" accent="rose" />
@@ -299,54 +315,17 @@ export default function AnalyzePage() {
             </div>
           </div>
 
-          <Panel className="flex flex-col">
-            <div className="flex items-center gap-3">
-              <SparklesIcon className="h-5 w-5 text-cyan-300" />
-              <div>
-                <h2 className="text-2xl font-semibold text-white">AI Security Copilot</h2>
-                <p className="text-sm text-slate-400">Ask for explanations, secure rewrites, or mitigation strategy against the active contract.</p>
-              </div>
-            </div>
-            <div className="scrollbar-thin mt-5 h-[40rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
-              {copilotMessages.length === 0 ? (
-                <>
-                  <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                    <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-slate-400">prompt ideas</p>
-                    <p>Explain this vulnerability in simple terms.</p>
-                    <p className="mt-2">Rewrite this contract with safer withdrawal logic.</p>
-                    <p className="mt-2">Give me the smallest secure patch for production.</p>
-                  </div>
-                  <div className="rounded-[20px] border border-cyan-400/10 bg-cyan-500/10 p-4 text-sm text-cyan-50">
-                    <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-slate-300">assistant</p>
-                    I can explain findings, suggest fixes, or produce a safer Solidity rewrite using the contract currently loaded in the editor.
-                  </div>
-                </>
-              ) : (
-                copilotMessages.map((message, index) => (
-                  <div
-                    key={`${message.role}-${index}`}
-                    className={`rounded-[20px] p-4 text-sm ${
-                      message.role === "assistant"
-                        ? "border border-cyan-400/10 bg-cyan-500/10 text-cyan-50"
-                        : "border border-white/10 bg-white/5 text-slate-100"
-                    }`}
-                  >
-                    <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-slate-400">{message.role}</p>
-                    <p className="whitespace-pre-wrap">{message.content || "Thinking..."}</p>
-                  </div>
-                ))
-              )}
-            </div>
-            <textarea
-              value={chatInput}
-              onChange={(event) => setChatInput(event.target.value)}
-              className="mt-4 h-28 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
-              placeholder="Explain this vulnerability, secure the contract, or generate a production patch."
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={sendCopilot}>Send to Copilot</Button>
-            </div>
-          </Panel>
+          <CopilotPanel
+            messages={copilotMessages}
+            input={chatInput}
+            onInputChange={setChatInput}
+            onSend={sendCopilot}
+            onQuickPrompt={(prompt) => {
+              setChatInput("");
+              void streamCopilot(prompt);
+            }}
+            sending={sending}
+          />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[0.98fr_1.02fr]">
@@ -355,18 +334,25 @@ export default function AnalyzePage() {
               <CodeBracketSquareIcon className="h-5 w-5 text-cyan-300" />
               <div>
                 <h2 className="text-2xl font-semibold text-white">Audit intelligence</h2>
-                <p className="text-sm text-slate-400">Executive summary, issue families, confidence-weighted guidance, and a clean export target.</p>
+                <p className="text-sm text-slate-400">Summary, score, remediation guidance, and PDF-friendly reporting in one place.</p>
               </div>
             </div>
             {activeResult ? (
               <div className="mt-5 space-y-5">
+                <div className="grid gap-4 md:grid-cols-4">
+                  <StatCard label="Security score" value={`${activeResult.risk_score}`} helper={activeResult.prediction} accent={activeResult.risk_score >= 70 ? "rose" : activeResult.risk_score >= 40 ? "amber" : "emerald"} />
+                  <StatCard label="Reentrancy" value={String(activeResult.findings.filter((item) => item.slug.includes("reentrancy")).length)} helper="Value transfer risks" accent="rose" />
+                  <StatCard label="Access Control" value={String(activeResult.findings.filter((item) => item.slug.includes("access")).length)} helper="Privilege boundaries" accent="amber" />
+                  <StatCard label="Overflow" value={String(activeResult.findings.filter((item) => item.slug.includes("overflow")).length)} helper="Arithmetic concerns" accent="emerald" />
+                </div>
+
                 <div className="panel-sheen rounded-[24px] border border-white/10 bg-white/5 p-5">
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Executive summary</p>
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Contract summary</p>
                   <p className="mt-3 text-sm leading-7 text-slate-300">{activeResult.summary}</p>
                 </div>
 
                 <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Recommended actions</p>
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Fix suggestions</p>
                   <ul className="mt-4 space-y-3 text-sm text-slate-300">
                     {activeResult.fix_suggestions.map((suggestion) => (
                       <li key={suggestion} className="flex gap-3">
@@ -390,22 +376,32 @@ export default function AnalyzePage() {
                 <ExclamationTriangleIcon className="h-5 w-5 text-cyan-300" />
                 <div>
                   <h2 className="text-2xl font-semibold text-white">Issue families</h2>
-                  <p className="text-sm text-slate-400">Structured vulnerability clusters and mitigation cues.</p>
+                  <p className="text-sm text-slate-400">Minimal, structured vulnerability clusters with click-through line targeting.</p>
                 </div>
               </div>
               <div className="mt-5 space-y-3">
-                {activeResult?.findings?.length ? activeResult.findings.map((item) => (
-                  <div key={item.slug} className="panel-sheen rounded-[20px] border border-white/10 bg-white/5 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-white">{item.label}</p>
-                      <span className={`rounded-full border px-3 py-1 text-xs ${severityTone[item.severity] ?? "border-white/10 bg-white/5 text-slate-300"}`}>
-                        {item.severity}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-400">{item.summary}</p>
-                    <p className="mt-2 text-sm text-cyan-100">{item.recommendation}</p>
-                  </div>
-                )) : (
+                {activeResult?.findings?.length ? activeResult.findings.map((item) => {
+                  const insight = lineInsights.find((entry) => entry.label === item.label);
+                  return (
+                    <button
+                      key={item.slug}
+                      onClick={() => setSelectedLine(insight?.lineNumber ?? null)}
+                      className="panel-sheen w-full rounded-[20px] border border-white/10 bg-white/5 p-4 text-left transition hover:border-cyan-400/20 hover:bg-white/10"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">{item.label}</p>
+                        <span className={`rounded-full border px-3 py-1 text-xs ${severityTone[item.severity] ?? "border-white/10 bg-white/5 text-slate-300"}`}>
+                          {item.severity}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-400">{item.summary}</p>
+                      <div className="mt-3 flex items-center justify-between text-xs text-cyan-100">
+                        <span>{item.recommendation}</span>
+                        {insight ? <span>Jump to line {insight.lineNumber}</span> : null}
+                      </div>
+                    </button>
+                  );
+                }) : (
                   <div className="rounded-[20px] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
                     No dominant issue family detected. This contract currently looks comparatively stable.
                   </div>

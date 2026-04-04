@@ -65,6 +65,7 @@ export default function DashboardPage() {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [apiKeyName, setApiKeyName] = useState("Production API");
+  const [issuedApiKey, setIssuedApiKey] = useState("");
   const [sending, setSending] = useState(false);
 
   const loadDashboard = async () => {
@@ -117,7 +118,8 @@ export default function DashboardPage() {
       toast.error(data.detail || "Failed to create API key");
       return;
     }
-    toast.success(`API key issued: ${data.key}`);
+    toast.success("API key issued");
+    setIssuedApiKey(data.key);
     setApiKeys((current) => [data, ...current]);
   };
 
@@ -312,11 +314,39 @@ export default function DashboardPage() {
                     />
                     <Button onClick={createApiKey}>Generate key</Button>
                   </div>
+                  {issuedApiKey ? (
+                    <div className="mt-5 rounded-[20px] border border-cyan-400/20 bg-cyan-500/10 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">New API key</p>
+                          <p className="mt-2 font-mono text-sm text-white">{issuedApiKey}</p>
+                          <p className="mt-2 text-xs text-slate-300">Copy this now. For security, the full token is only shown once.</p>
+                        </div>
+                        <Button
+                          tone="ghost"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(issuedApiKey);
+                            toast.success("API key copied");
+                          }}
+                        >
+                          Copy key
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="mt-5 grid gap-3 md:grid-cols-2">
                     {apiKeys.map((key) => (
                       <div key={key.id} className="rounded-[20px] border border-white/10 bg-white/5 p-4">
-                        <p className="text-sm font-semibold text-white">{key.name}</p>
-                        <p className="mt-2 text-sm text-slate-400">{key.key_prefix} · {key.is_active ? "active" : "inactive"}</p>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-white">{key.name}</p>
+                          <span className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.22em] ${key.is_active ? "border border-emerald-400/20 bg-emerald-500/10 text-emerald-200" : "border border-white/10 bg-white/5 text-slate-400"}`}>
+                            {key.is_active ? "active" : "inactive"}
+                          </span>
+                        </div>
+                        <p className="mt-2 font-mono text-sm text-slate-300">{key.key_prefix}••••••••</p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Created {new Date(key.created_at).toLocaleDateString()}
+                        </p>
                       </div>
                     ))}
                   </div>
