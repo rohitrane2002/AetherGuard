@@ -106,12 +106,12 @@ export default function ScrollStory({ deviceTier }: { deviceTier: DeviceTier }) 
   return (
     <section
       ref={ref}
-      className={deviceTier === "desktop" ? "relative h-[280vh]" : "py-12"}
+      className={deviceTier === "desktop" ? "relative h-[220vh]" : "py-10 md:py-14"}
     >
       <div className={deviceTier === "desktop" ? "sticky top-0 flex min-h-screen items-center" : ""}>
         <div className="grid w-full gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Left: Cinematic visual panel */}
-          <div className="relative min-h-[36rem] overflow-hidden rounded-[32px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,16,30,0.85),rgba(6,10,20,0.92))] p-8">
+          <div className="relative min-h-[31rem] overflow-hidden rounded-[32px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,16,30,0.85),rgba(6,10,20,0.92))] p-8">
             {/* Animated parallax blobs */}
             <motion.div
               style={{ y: layerOne }}
@@ -147,13 +147,25 @@ export default function ScrollStory({ deviceTier }: { deviceTier: DeviceTier }) 
                 </p>
               </div>
 
-              {/* Progress indicator (desktop) */}
+              <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                {[
+                  ["02", "signal streams", "Live analysis, alerts, and copilot memory stay in sync."],
+                  ["24/7", "coverage", "Every contract state change is treated like a live operating surface."],
+                  ["< 1s", "response window", "Detection and remediation guidance arrive before release."],
+                ].map(([value, label, body]) => (
+                  <div key={label} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+                    <p className="text-2xl font-semibold text-white">{value}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-slate-500">{label}</p>
+                    <p className="mt-2 text-xs leading-6 text-slate-400">{body}</p>
+                  </div>
+                ))}
+              </div>
+
               {deviceTier === "desktop" && (
-                <div className="mt-auto pt-8">
+                <div className="mt-auto pt-6">
                   <div className="flex items-center gap-4">
                     {storyFrames.map((frame, i) => {
                       const isActive = activeFrame === i;
-                      const colors = accentMap[frame.accent];
                       return (
                         <div key={i} className="flex items-center gap-2">
                           <motion.div
@@ -187,7 +199,7 @@ export default function ScrollStory({ deviceTier }: { deviceTier: DeviceTier }) 
           </div>
 
           {/* Right: Story cards */}
-          <div className="space-y-4">
+          <div className="space-y-4 self-start">
             {storyFrames.map((frame, index) => {
               const colors = accentMap[frame.accent];
               const isActive = activeFrame === index;

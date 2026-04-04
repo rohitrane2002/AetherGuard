@@ -33,13 +33,18 @@ function LiveScanDemo() {
   return (
     <div className="mx-auto mt-16 max-w-2xl text-left">
       <div className="glass-panel overflow-hidden border border-white/5 bg-black/40">
-        <div className="flex items-center gap-2 border-b border-white/5 bg-white/5 px-4 py-3">
-          <div className="flex gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-red-500/80"></div>
-            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80"></div>
-            <div className="h-2.5 w-2.5 rounded-full bg-green-500/80"></div>
+        <div className="flex items-center justify-between border-b border-white/5 bg-white/5 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              <div className="h-3 w-3 rounded-full bg-[#ff5f57] shadow-[0_0_12px_rgba(255,95,87,0.25)]" />
+              <div className="h-3 w-3 rounded-full bg-[#febc2e] shadow-[0_0_12px_rgba(254,188,46,0.2)]" />
+              <div className="h-3 w-3 rounded-full bg-[#28c840] shadow-[0_0_12px_rgba(40,200,64,0.2)]" />
+            </div>
+            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+              AetherGuard AI Engine
+            </span>
           </div>
-          <span className="ml-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">AetherGuard AI Engine</span>
+          <span className="text-[10px] uppercase tracking-[0.22em] text-emerald-300">Live Session</span>
         </div>
         <div className="p-5 font-mono text-[13px] leading-relaxed text-zinc-400">
           {logs.map((log, i) => (

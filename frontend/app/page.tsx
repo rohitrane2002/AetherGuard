@@ -8,6 +8,7 @@ import Hero from "./components/Hero";
 import MobileOptimized from "./components/MobileOptimized";
 import PerspectiveCards from "./components/PerspectiveCards";
 import ScanSection from "./components/ScanSection";
+import ScrollStory from "./components/ScrollStory";
 import ThreatIntelligence from "./components/ThreatIntelligence";
 import WorkflowSteps from "./components/WorkflowSteps";
 
@@ -109,7 +110,7 @@ export default function Home() {
         <Hero />
 
         {/* ── 2. Problem / Proof Signals ── */}
-        <section className="mx-auto mt-20 max-w-5xl py-24 border-t border-white/5">
+        <section className="mx-auto mt-16 max-w-5xl border-t border-white/5 py-20 md:mt-20 md:py-24">
           <div className="mb-16 text-center">
             <h2 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
               DeFi security is <span className="text-zinc-500">broken.</span>
@@ -139,22 +140,26 @@ export default function Home() {
         </section>
 
         {/* ── 3. Solution (Features) ── */}
-        <div className="mt-10">
+        <div className="mt-8 md:mt-10">
           <PerspectiveCards deviceTier={deviceTier} />
         </div>
 
         {/* ── Workflow Steps ── */}
-        <div id="demo" className="mt-10 border-t border-white/5 pt-20">
+        <div id="demo" className="mt-8 border-t border-white/5 pt-16 md:mt-10 md:pt-20">
           <WorkflowSteps deviceTier={deviceTier} />
         </div>
 
         {/* ── Deep Demo ── */}
-        <div className="mt-32">
+        <div className="mt-20 md:mt-24">
           <ScanSection deviceTier={deviceTier} />
         </div>
 
+        <div className="mt-16 md:mt-20">
+          <ScrollStory deviceTier={deviceTier} />
+        </div>
+
         {/* ── Threat Intelligence ── */}
-        <div className="mt-32">
+        <div className="mt-16 md:mt-20">
           <ThreatIntelligence deviceTier={deviceTier} />
         </div>
 
@@ -167,7 +172,7 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: EASING }}
-          className="mx-auto mt-32 max-w-4xl overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.02] px-8 py-20 text-center"
+          className="mx-auto mt-20 max-w-4xl overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.02] px-8 py-16 text-center md:mt-24 md:py-20"
         >
           <div className="relative z-10">
             <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-white md:text-5xl">

@@ -31,6 +31,37 @@ const scanLog = [
   { time: "00:01.02", msg: "✓ Scan complete — 2 issues found", type: "done" },
 ];
 
+function MacWindowChrome({ title, status }: { title: string; status?: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full bg-[#ff5f57] shadow-[0_0_12px_rgba(255,95,87,0.25)]" />
+          <span className="h-3 w-3 rounded-full bg-[#febc2e] shadow-[0_0_12px_rgba(254,188,46,0.2)]" />
+          <span className="h-3 w-3 rounded-full bg-[#28c840] shadow-[0_0_12px_rgba(40,200,64,0.2)]" />
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-slate-400">
+          {title}
+        </span>
+      </div>
+      {status ? (
+        <div className="flex items-center gap-2">
+          <motion.div
+            className="h-2 w-2 rounded-full"
+            animate={
+              status === "Issues Found"
+                ? { backgroundColor: ["rgba(251,191,36,1)", "rgba(248,113,113,1)"], scale: [1, 1.2, 1] }
+                : { backgroundColor: "rgba(74,222,128,1)" }
+            }
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <span className="text-[10px] uppercase tracking-wider text-slate-500">{status}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ScanLog({ revealed }: { revealed: boolean }) {
   const [visibleCount, setVisibleCount] = useState(0);
 
@@ -128,32 +159,10 @@ export default function ScanSection({ deviceTier }: { deviceTier: DeviceTier }) 
         </h2>
       </motion.div>
 
-      <div className={`grid gap-6 ${deviceTier === "mobile" ? "" : "lg:grid-cols-[1.15fr_0.85fr]"}`}>
+      <div className={`grid items-stretch gap-6 ${deviceTier === "mobile" ? "" : "lg:grid-cols-[1.08fr_0.92fr]"}`}>
         {/* Code editor panel */}
         <div className="overflow-hidden rounded-[28px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,16,30,0.9),rgba(6,10,20,0.95))] shadow-[0_32px_100px_rgba(2,6,18,0.5)]">
-          {/* Editor toolbar */}
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-rose-400/80" />
-              <span className="h-3 w-3 rounded-full bg-amber-300/80" />
-              <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
-              <span className="ml-3 text-[11px] text-slate-500">AgentVault.sol</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <motion.div
-                className="h-2 w-2 rounded-full"
-                animate={
-                  revealed
-                    ? { backgroundColor: ["rgba(251,191,36,1)", "rgba(248,113,113,1)"], scale: [1, 1.2, 1] }
-                    : { backgroundColor: "rgba(74,222,128,1)" }
-                }
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-              <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                {revealed ? "Issues Found" : "Scanning..."}
-              </span>
-            </div>
-          </div>
+          <MacWindowChrome title="AgentVault.sol" status={revealed ? "Issues Found" : "Scanning..."} />
 
           {/* Code content */}
           <div className="p-4 font-mono text-[12px] leading-7 text-slate-300">
@@ -224,7 +233,7 @@ export default function ScanSection({ deviceTier }: { deviceTier: DeviceTier }) 
         </div>
 
         {/* Right: Analysis panel */}
-        <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-rows-[auto_auto_1fr]">
           {/* AI explanation */}
           <Panel className="p-5">
             <div className="flex items-center gap-2">
@@ -311,6 +320,54 @@ export default function ScanSection({ deviceTier }: { deviceTier: DeviceTier }) 
                   <p className="text-sm font-medium text-white">{item.val}</p>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(8,12,22,0.88),rgba(8,10,18,0.94))]">
+            <MacWindowChrome title="execution-trace.log" />
+            <div className="grid gap-4 p-5 md:grid-cols-[0.95fr_1.05fr]">
+              <div className="space-y-3">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">Runtime timeline</p>
+                {[
+                  ["Parse", "00:00.12", "AST + CFG ready"],
+                  ["Detect", "00:00.72", "External call before state mutation"],
+                  ["Patch", "00:01.02", "Safe ordering generated"],
+                ].map(([label, time, body], index) => (
+                  <div key={label} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-white">{label}</span>
+                      <span className="font-mono text-[10px] text-slate-500">{time}</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-6 text-slate-400">{body}</p>
+                    {index < 2 ? <div className="mt-3 h-px w-full bg-white/[0.04]" /> : null}
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-cyan-400/10 bg-cyan-500/[0.03] p-4">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-300">Attack path snapshot</p>
+                <div className="mt-4 space-y-3">
+                  {[
+                    "User requests withdraw(amount)",
+                    "Contract performs external value transfer",
+                    "Attacker re-enters before balance update",
+                    "Vault accounting desyncs from true reserves",
+                  ].map((item, index) => (
+                    <div key={item} className="flex items-start gap-3">
+                      <div className="mt-1 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-[10px] text-cyan-200">
+                        {index + 1}
+                      </div>
+                      <p className="text-sm leading-6 text-slate-300">{item}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 rounded-2xl border border-rose-500/15 bg-rose-500/5 p-4">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-rose-300">Root cause</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    The value transfer executes before the internal balance mutation, leaving the contract re-enterable during the most sensitive phase.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
