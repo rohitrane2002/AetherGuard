@@ -198,7 +198,7 @@ export default function DashboardPage() {
             ) : null}
 
             <Panel className="p-0">
-              <div className="grid items-stretch xl:min-h-[560px] xl:grid-cols-[1.08fr_0.92fr]">
+              <div className="grid items-stretch xl:min-h-[520px] xl:grid-cols-[1fr_0.92fr]">
                 <div className="space-y-6 p-8">
                   <div className="space-y-4">
                     <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
@@ -214,7 +214,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+                  <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
                     <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-4 md:grid-cols-2">
                     <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
                     <StatCard
                       label="Usage Today"
