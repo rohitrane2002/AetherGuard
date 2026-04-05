@@ -198,8 +198,8 @@ export default function DashboardPage() {
             ) : null}
 
             <Panel className="p-0">
-              <div className="grid items-stretch xl:min-h-[560px] xl:grid-cols-[1.04fr_0.96fr]">
-                <div className="flex h-full flex-col justify-between gap-6 p-8">
+              <div className="grid items-start xl:grid-cols-[1.04fr_0.96fr]">
+                <div className="space-y-6 p-8">
                   <div className="space-y-6">
                     <div className="space-y-4">
                       <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
@@ -310,8 +310,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="h-full border-t border-white/10 bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8 xl:border-l xl:border-t-0">
-                  <div className="flex h-full min-h-full flex-col gap-5">
+                <div className="border-t border-white/10 bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8 xl:border-l xl:border-t-0">
+                  <div className="flex min-h-full flex-col gap-5 xl:min-h-[720px]">
                     <div className="flex items-center gap-3">
                       <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-cyan-300" />
                       <div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                         </button>
                       ))}
                     </div>
-                    <div className="scrollbar-thin min-h-[26rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4 xl:min-h-[30rem]">
+                    <div className="scrollbar-thin min-h-[22rem] max-h-[26rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4 xl:min-h-[26rem] xl:max-h-[30rem]">
                       {chatMessages.length === 0 ? (
                         <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
                           Ask for vulnerability explanations, secure rewrites, or exploit narratives.
