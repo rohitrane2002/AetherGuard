@@ -198,7 +198,7 @@ export default function DashboardPage() {
             ) : null}
 
             <Panel className="p-0">
-              <div className="grid items-stretch xl:min-h-[640px] xl:grid-cols-[1.18fr_0.82fr]">
+              <div className="grid items-stretch xl:min-h-[560px] xl:grid-cols-[1.08fr_0.92fr]">
                 <div className="space-y-6 p-8">
                   <div className="space-y-4">
                     <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
@@ -212,28 +212,6 @@ export default function DashboardPage() {
                         Recent scans, unread alerts, API access, workspace momentum, and AI guidance all live in one structured operating surface.
                       </p>
                     </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
-                    <StatCard
-                      label="Usage Today"
-                      value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
-                      helper={`${summary.usage.remaining_today} scans remaining`}
-                      accent="violet"
-                    />
-                    <StatCard
-                      label="Unread Alerts"
-                      value={String(summary.workspace.notification_metrics?.unread ?? summary.notifications.length)}
-                      helper="Platform intelligence waiting"
-                      accent="rose"
-                    />
-                    <StatCard
-                      label="Workspace"
-                      value={summary.workspace.team_name}
-                      helper={`${summary.workspace.members} members · ${summary.workspace.role}`}
-                      accent="emerald"
-                    />
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
@@ -281,6 +259,28 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
+                    <StatCard
+                      label="Usage Today"
+                      value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
+                      helper={`${summary.usage.remaining_today} scans remaining`}
+                      accent="violet"
+                    />
+                    <StatCard
+                      label="Unread Alerts"
+                      value={String(summary.workspace.notification_metrics?.unread ?? summary.notifications.length)}
+                      helper="Platform intelligence waiting"
+                      accent="rose"
+                    />
+                    <StatCard
+                      label="Workspace"
+                      value={summary.workspace.team_name}
+                      helper={`${summary.workspace.members} members · ${summary.workspace.role}`}
+                      accent="emerald"
+                    />
+                  </div>
                 </div>
 
                 <div className="h-full border-t border-white/10 bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8 xl:border-l xl:border-t-0">
@@ -307,7 +307,7 @@ export default function DashboardPage() {
                         </button>
                       ))}
                     </div>
-                    <div className="scrollbar-thin min-h-[20rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+                    <div className="scrollbar-thin min-h-[18rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
                       {chatMessages.length === 0 ? (
                         <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
                           Ask for vulnerability explanations, secure rewrites, or exploit narratives.
