@@ -198,88 +198,115 @@ export default function DashboardPage() {
             ) : null}
 
             <Panel className="p-0">
-              <div className="grid items-stretch xl:min-h-[520px] xl:grid-cols-[1fr_0.92fr]">
-                <div className="space-y-6 p-8">
-                  <div className="space-y-4">
+              <div className="grid items-stretch xl:min-h-[560px] xl:grid-cols-[1.04fr_0.96fr]">
+                <div className="flex h-full flex-col justify-between gap-6 p-8">
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
+                        Operations overview
+                      </div>
+                      <div className="space-y-3">
+                        <h2 className="max-w-3xl text-4xl font-semibold tracking-tight text-white md:text-5xl">
+                          Command your smart contract risk with one clean control plane.
+                        </h2>
+                        <p className="max-w-2xl text-base leading-8 text-slate-400">
+                          Recent scans, unread alerts, API access, workspace momentum, and AI guidance all live in one structured operating surface.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+                      <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Latest signal</p>
+                            <h3 className="mt-2 text-2xl font-semibold text-white">
+                              {latestScan ? `${latestScan.prediction} detection` : "Awaiting first scan"}
+                            </h3>
+                          </div>
+                          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white">
+                            {latestScan ? `${latestScan.risk_score}/100` : "--"}
+                          </div>
+                        </div>
+                        <p className="mt-4 text-sm leading-7 text-slate-400">
+                          {latestScan ? latestScan.contract_snippet : "Run a live scan to seed the command center with contract telemetry."}
+                        </p>
+                      </div>
+
+                      <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Portfolio exposure</p>
+                            <h3 className="mt-2 text-xl font-semibold text-white">
+                              {averageRisk >= 70 ? "Critical" : averageRisk >= 40 ? "Elevated" : "Stable"} posture
+                            </h3>
+                          </div>
+                          <div className="text-5xl font-semibold tracking-tight text-white">{averageRisk}</div>
+                        </div>
+                        <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-950/90">
+                          <div
+                            className={`h-full rounded-full ${
+                              averageRisk >= 70
+                                ? "bg-gradient-to-r from-rose-400 via-rose-500 to-blue-950"
+                                : averageRisk >= 40
+                                ? "bg-gradient-to-r from-amber-300 via-amber-400 to-slate-900"
+                                : "bg-gradient-to-r from-emerald-300 via-cyan-400 to-slate-900"
+                            }`}
+                            style={{ width: `${averageRisk}%` }}
+                          />
+                        </div>
+                        <p className="mt-4 text-sm leading-7 text-slate-400">
+                          Average risk across the latest contract telemetry in this workspace.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
+                      <StatCard
+                        label="Usage Today"
+                        value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
+                        helper={`${summary.usage.remaining_today} scans remaining`}
+                        accent="violet"
+                      />
+                      <StatCard
+                        label="Unread Alerts"
+                        value={String(summary.workspace.notification_metrics?.unread ?? summary.notifications.length)}
+                        helper="Platform intelligence waiting"
+                        accent="rose"
+                      />
+                      <StatCard
+                        label="Workspace"
+                        value={summary.workspace.team_name}
+                        helper={`${summary.workspace.members} members · ${summary.workspace.role}`}
+                        accent="emerald"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-5 lg:grid-cols-[1.08fr_0.92fr_0.92fr]">
                     <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
-                      Operations overview
+                      Control matrix
                     </div>
-                    <div className="space-y-3">
-                      <h2 className="max-w-3xl text-4xl font-semibold tracking-tight text-white md:text-5xl">
-                        Command your smart contract risk with one clean control plane.
-                      </h2>
-                      <p className="max-w-2xl text-base leading-8 text-slate-400">
-                        Recent scans, unread alerts, API access, workspace momentum, and AI guidance all live in one structured operating surface.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-                    <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Latest signal</p>
-                          <h3 className="mt-2 text-2xl font-semibold text-white">
-                            {latestScan ? `${latestScan.prediction} detection` : "Awaiting first scan"}
-                          </h3>
-                        </div>
-                        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white">
-                          {latestScan ? `${latestScan.risk_score}/100` : "--"}
-                        </div>
+                    <div className="lg:col-span-3 grid gap-4 lg:grid-cols-3">
+                      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">Team mode</p>
+                        <p className="mt-3 text-lg font-semibold text-white">{summary.workspace.members} active members</p>
+                        <p className="mt-2 text-sm text-slate-400">Role posture: {summary.workspace.role}</p>
                       </div>
-                      <p className="mt-4 text-sm leading-7 text-slate-400">
-                        {latestScan ? latestScan.contract_snippet : "Run a live scan to seed the command center with contract telemetry."}
-                      </p>
-                    </div>
-
-                    <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Portfolio exposure</p>
-                          <h3 className="mt-2 text-xl font-semibold text-white">
-                            {averageRisk >= 70 ? "Critical" : averageRisk >= 40 ? "Elevated" : "Stable"} posture
-                          </h3>
-                        </div>
-                        <div className="text-5xl font-semibold tracking-tight text-white">{averageRisk}</div>
+                      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">Shared reporting</p>
+                        <p className="mt-3 text-lg font-semibold text-white">{summary.workspace.shared_reports} reports live</p>
+                        <p className="mt-2 text-sm text-slate-400">Shared audit visibility across the workspace.</p>
                       </div>
-                      <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-950/90">
-                        <div
-                          className={`h-full rounded-full ${
-                            averageRisk >= 70
-                              ? "bg-gradient-to-r from-rose-400 via-rose-500 to-blue-950"
-                              : averageRisk >= 40
-                              ? "bg-gradient-to-r from-amber-300 via-amber-400 to-slate-900"
-                              : "bg-gradient-to-r from-emerald-300 via-cyan-400 to-slate-900"
-                          }`}
-                          style={{ width: `${averageRisk}%` }}
-                        />
+                      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">Unread intelligence</p>
+                        <p className="mt-3 text-lg font-semibold text-white">
+                          {summary.workspace.notification_metrics?.critical ?? 0} critical / {summary.workspace.notification_metrics?.unread ?? summary.notifications.length} unread
+                        </p>
+                        <p className="mt-2 text-sm text-slate-400">Operator feed ready for triage and follow-up.</p>
                       </div>
-                      <p className="mt-4 text-sm leading-7 text-slate-400">
-                        Average risk across the latest contract telemetry in this workspace.
-                      </p>
                     </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
-                    <StatCard
-                      label="Usage Today"
-                      value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
-                      helper={`${summary.usage.remaining_today} scans remaining`}
-                      accent="violet"
-                    />
-                    <StatCard
-                      label="Unread Alerts"
-                      value={String(summary.workspace.notification_metrics?.unread ?? summary.notifications.length)}
-                      helper="Platform intelligence waiting"
-                      accent="rose"
-                    />
-                    <StatCard
-                      label="Workspace"
-                      value={summary.workspace.team_name}
-                      helper={`${summary.workspace.members} members · ${summary.workspace.role}`}
-                      accent="emerald"
-                    />
                   </div>
                 </div>
 
@@ -307,7 +334,7 @@ export default function DashboardPage() {
                         </button>
                       ))}
                     </div>
-                    <div className="scrollbar-thin min-h-[18rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+                    <div className="scrollbar-thin min-h-[18rem] max-h-[22rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
                       {chatMessages.length === 0 ? (
                         <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
                           Ask for vulnerability explanations, secure rewrites, or exploit narratives.
