@@ -12,7 +12,7 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import BackgroundGrid from "../components/BackgroundGrid";
 import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
-import { hasAuthSession, storeAuthSession } from "../lib/auth";
+import { hasAuthSession, isBackendWarm, storeAuthSession, warmBackend } from "../lib/auth";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
@@ -39,6 +39,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [slowRequest, setSlowRequest] = useState(false);
   const [nextPath, setNextPath] = useState<string | null>(null);
+  const [backendWarming, setBackendWarming] = useState(() => !isBackendWarm());
 
   const destinationLabel =
     nextPath === "/analyze"
@@ -60,11 +61,26 @@ export default function AuthPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    let active = true;
+    warmBackend().finally(() => {
+      if (active) {
+        setBackendWarming(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const submit = async () => {
     const slowRequestTimer = window.setTimeout(() => setSlowRequest(true), 6000);
     try {
       setLoading(true);
       setSlowRequest(false);
+      if (!isBackendWarm()) {
+        await warmBackend();
+      }
       const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
@@ -207,6 +223,11 @@ export default function AuthPage() {
               : `Start with a persistent workspace and continue directly into ${destinationLabel}.`}
           </p>
 
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300">
+            <span className={`h-2 w-2 rounded-full ${backendWarming ? "animate-pulse bg-amber-300" : "bg-emerald-300"}`} />
+            {backendWarming ? "Preparing secure runtime..." : "Secure runtime online"}
+          </div>
+
           <div className="mt-8 space-y-4">
             <input
               type="email"
@@ -222,7 +243,17 @@ export default function AuthPage() {
               className="w-full rounded-[22px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
               placeholder="Password"
             />
-            <Button onClick={submit} disabled={loading} className="w-full">
+            <Button
+              onClick={submit}
+              disabled={loading}
+              className="w-full"
+              onMouseEnter={() => {
+                if (!isBackendWarm()) void warmBackend();
+              }}
+              onFocus={() => {
+                if (!isBackendWarm()) void warmBackend();
+              }}
+            >
               {loading
                 ? slowRequest
                   ? "Waking backend..."

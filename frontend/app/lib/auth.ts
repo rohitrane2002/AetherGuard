@@ -5,6 +5,9 @@ export const AUTH_USER_EMAIL_KEY = "aetherguard_user_email";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
 
+let backendWarmupPromise: Promise<boolean> | null = null;
+let backendReady = false;
+
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(AUTH_TOKEN_KEY);
@@ -51,6 +54,30 @@ export function isUnauthorizedStatus(status?: number): boolean {
 export function isUnauthorizedError(error: unknown): boolean {
   const maybeError = error as { response?: { status?: number } };
   return isUnauthorizedStatus(maybeError?.response?.status);
+}
+
+export function isBackendWarm(): boolean {
+  return backendReady;
+}
+
+export function warmBackend(): Promise<boolean> {
+  if (backendReady) return Promise.resolve(true);
+  if (backendWarmupPromise) return backendWarmupPromise;
+
+  backendWarmupPromise = fetch(`${API_BASE_URL}/health`, {
+    method: "GET",
+    cache: "no-store",
+  })
+    .then((response) => {
+      backendReady = response.ok;
+      return response.ok;
+    })
+    .catch(() => false)
+    .finally(() => {
+      backendWarmupPromise = null;
+    });
+
+  return backendWarmupPromise;
 }
 
 export async function refreshAccessToken(): Promise<string | null> {
