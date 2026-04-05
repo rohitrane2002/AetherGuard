@@ -311,7 +311,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="h-full border-t border-white/10 bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8 xl:border-l xl:border-t-0">
-                  <div className="flex h-full min-h-full flex-col gap-4">
+                  <div className="flex h-full min-h-full flex-col gap-5">
                     <div className="flex items-center gap-3">
                       <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-cyan-300" />
                       <div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                         </button>
                       ))}
                     </div>
-                    <div className="scrollbar-thin min-h-[18rem] max-h-[22rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+                    <div className="scrollbar-thin min-h-[26rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4 xl:min-h-[30rem]">
                       {chatMessages.length === 0 ? (
                         <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
                           Ask for vulnerability explanations, secure rewrites, or exploit narratives.
@@ -358,7 +358,7 @@ export default function DashboardPage() {
                     <textarea
                       value={chatInput}
                       onChange={(event) => setChatInput(event.target.value)}
-                      className="h-24 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
+                      className="h-28 rounded-[24px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none"
                       placeholder="Explain the last critical issue and give me a secure Solidity patch."
                     />
                     <div className="flex items-center justify-between gap-3">
