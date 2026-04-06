@@ -71,6 +71,7 @@ class AIEngine:
                 "explanation": "Failed to generate AI reasoning. Please check logs.",
                 "fix": "// AI Generation error."
             }
+
     def generate_poc_test(self, code: str, rule_issues: list[dict]) -> str:
         if not self.api_key or not rule_issues:
             return "// No issues detected to generate PoC test."
@@ -138,17 +139,19 @@ class AIEngine:
         Task:
         Identify logic errors or high-level vulnerabilities that are NOT simple regex patterns (e.g. Broken state machines, incorrect authorization logic, flawed game theory, or missing critical 'require' checks).
         
-        Return ONLY a JSON list of findings:
-        [
-          {{
-            "name": "Found Logic Flaw",
-            "severity": "high",
-            "description": "Explanation of why the logic is flawed...",
-            "line_numbers": [12]
-          }}
-        ]
+        Return ONLY a JSON object with this format:
+        {{
+          "findings": [
+            {{
+              "name": "Found Logic Flaw",
+              "severity": "high",
+              "description": "Explanation of why the logic is flawed...",
+              "line_numbers": [12]
+            }}
+          ]
+        }}
         
-        Keep it brief. If no deep logic flaws are found, return [].
+        Keep it brief. If no deep logic flaws are found, return {{"findings": []}}.
         """
 
         try:
@@ -173,19 +176,17 @@ class AIEngine:
                 data = response.json()
             
             content = data["choices"][0]["message"]["content"]
-            # Basic cleanup
+            # Basic cleanup if the model didn't return pure JSON (though json_object should ensure it)
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             
             result = json.loads(content)
-            # Ensure it's a list even if model returns { "findings": [...] }
-            # result might be list or dict
-            findings = result if isinstance(result, list) else result.get("findings", result.get("issues", []))
-            # If still dict, wrap in list if it's a finding
-            if isinstance(findings, dict) and "name" in findings:
-              return [findings]
+            # Support both direct list or wrapped object
+            if isinstance(result, list):
+                return result
+            # Support {"findings": [...]} or {"issues": [...]}
+            findings = result.get("findings") or result.get("issues") or []
             return findings if isinstance(findings, list) else []
         except Exception as e:
             print(f"Semantic Review Error: {e}")
             return []
-
