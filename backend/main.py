@@ -78,4 +78,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/admin/provision")
+async def provision_founder():
+    from database import SessionLocal
+    from models import User
+    from auth import hash_password
+    import uuid
+    
+    db = SessionLocal()
+    email = "founder@aetherguard.dev"
+    password = "Rohit@171125"
+    
+    try:
+        hashed = hash_password(password)
+        existing = db.query(User).filter(User.email == email).first()
+        if existing:
+            existing.password_hash = hashed
+            existing.plan = "founder"
+            existing.subscription_status = "active"
+            db.commit()
+            return {"status": "success", "message": f"Updated existing user {email}"}
+        else:
+            new_founder = User(
+                id=uuid.uuid4(),
+                email=email,
+                password_hash=hashed,
+                plan="founder",
+                subscription_status="active",
+                is_active=True
+            )
+            db.add(new_founder)
+            db.commit()
+            return {"status": "success", "message": f"Created new founder {email}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        db.close()
+
 app.include_router(build_router(get_analyzer, get_analyzer_init_error))
