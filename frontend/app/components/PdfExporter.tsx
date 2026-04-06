@@ -1,53 +1,73 @@
+"use client";
+
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-
 /**
- * Export any element as a PDF.
- * Handles Tailwind gradient colours by sanitising them for html2canvas.
+ * Export any element as a PDF with enterprise-grade reliability.
  */
 export async function exportPdf(elementId: string) {
+  console.log("[PdfExporter] Triggered for ID:", elementId);
   const element = document.getElementById(elementId);
+  
   if (!element) {
-    toast.error("Telemetry context missing for report generation. Run a scan first.");
+    console.error("[PdfExporter] Element not found:", elementId);
+    toast.error("Dashboard context not detected. Run a security scan first.");
     return;
+  }
+
+  // Check if it has content (to avoid hanging on empty divs)
+  if (!element.textContent?.trim() && element.children.length === 0) {
+     toast.error("Report intelligence is still being synthesized. Wait a moment.");
+     return;
   }
 
   const tid = toast.loading("Synthesizing AetherGuard Security Certificate...");
 
   try {
+    // Ensure the element is visible for capture
+    const originalStyle = element.style.cssText;
+    
     const canvas = await html2canvas(element, {
-      backgroundColor: "#0d1117",
-      scale: 1.5, // Slightly lower scale for faster processing but still sharp
+      backgroundColor: "#020617",
+      scale: 2,
       useCORS: true,
-      allowTaint: true,
       logging: false,
-      windowWidth: 1024,
-      onclone: (doc) => {
-        const report = doc.getElementById(elementId);
-        if (report) {
-          // Temporarily fix any positioning that would hide it from canvas
-          report.style.position = "static";
-          report.style.opacity = "1";
-          report.style.left = "0";
-          report.style.display = "block";
+      allowTaint: false, // Prevents tainted canvas errors from external assets
+      onclone: (clonedDoc) => {
+        const clonedElement = clonedDoc.getElementById(elementId);
+        if (clonedElement) {
+          clonedElement.style.opacity = "1";
+          clonedElement.style.visibility = "visible";
+          clonedElement.style.position = "static";
+          clonedElement.style.display = "block";
         }
-      },
+      }
     });
 
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
+    const imgData = canvas.toDataURL("image/png", 1.0);
+    const pdf = new jsPDF({
+      orientation: "p",
+      unit: "mm",
+      format: "a4"
+    });
+
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const imgWidth = pageWidth - 20;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
     
-    // Add multiple pages if height is too much
-    pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight, undefined, "FAST");
-    pdf.save("aetherguard_audit_report.pdf");
-    toast.success("Audit report ready.", { id: tid });
+    const imgWidth = pageWidth - (margin * 2);
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    // If report is longer than one page, we just scale it to fit or we could add pages.
+    // For now, scale to fit width and handle overflow.
+    pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight, undefined, "FAST");
+    
+    pdf.save(`AetherGuard_Audit_${new Date().getTime()}.pdf`);
+    toast.success("Security Certificate Downloaded", { id: tid });
   } catch (err) {
-    console.error("PDF Export failed:", err);
-    toast.error("Report synthesis failed. Your workspace context might be too large.", { id: tid });
+    console.error("[PdfExporter] Critical failure:", err);
+    toast.error("Audit synthesis failed. Use the 'Copy Fix' instead for now.", { id: tid });
   }
 }
