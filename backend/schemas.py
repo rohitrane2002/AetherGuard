@@ -88,23 +88,35 @@ class AnalysisFindingResponse(BaseModel):
     confidence: float
     summary: str
     recommendation: str
+    line_numbers: list[int] = []
+
 
 
 class AnalysisResponse(BaseModel):
-    prediction: str
-    prob_secure: float
-    prob_vulnerable: float
-    email: str
+    score: int
+    severity: str
+    issues: list[str]
+    steps: list[str]
+    explanation: str
+    fix: str
+    poc_test: Optional[str] = None
     log_id: int
-    model_source: str
+
     confidence: float
-    remaining_today: int
-    risk_score: int
-    findings: list[AnalysisFindingResponse]
-    safe_patterns: list[str]
-    summary: str
-    fix_suggestions: list[str]
-    autofix_preview: str
+    # Backward compat fields (make them optional)
+    prediction: Optional[str] = None
+    prob_secure: Optional[float] = None
+    prob_vulnerable: Optional[float] = None
+    email: Optional[str] = None
+    model_source: Optional[str] = None
+    remaining_today: Optional[int] = None
+    risk_score: Optional[int] = None
+    findings: Optional[list[AnalysisFindingResponse]] = None
+    safe_patterns: Optional[list[str]] = None
+    summary: Optional[str] = None
+    fix_suggestions: Optional[list[str]] = None
+    autofix_preview: Optional[str] = None
+
 
 
 class ChatRequest(BaseModel):

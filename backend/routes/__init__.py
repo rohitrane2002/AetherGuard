@@ -57,6 +57,11 @@ from schemas import (
     WorkspaceMemberUpdateRequest,
     WorkspaceResponse,
 )
+from rule_engine import RuleEngine
+from ai_engine import AIEngine
+from scoring import ScoringEngine
+import asyncio
+
 from services.analysis_service import run_analysis_and_log
 from services.api_key_service import create_api_key_record, get_user_by_api_key, list_api_keys
 from services.chat_service import chat_with_context, get_chat_history, stream_chat_with_context
@@ -142,10 +147,6 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             },
             database={"connected": database_connected},
         )
-
-    @router.get("/debug/test")
-    async def debug_test(current_user: User = Depends(get_current_user)):
-        return {"status": "REACHED", "user": current_user.email}
 
     @router.get("/dashboard/summary", response_model=DashboardSummaryResponse)
     async def dashboard_summary(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -501,25 +502,95 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         if usage["remaining_today"] <= 0:
             raise HTTPException(status_code=403, detail=f"Daily analysis limit reached for the {current_user.plan} plan")
 
-        analyzer = get_analyzer()
-        if analyzer is None:
-            raise HTTPException(status_code=503, detail="Analyzer is not ready")
+        # Initialize engines
+        rule_engine = RuleEngine()
+        ai_engine = AIEngine()
+        score_engine = ScoringEngine()
 
-        result = run_analysis_and_log(db, analyzer, current_user, source)
-        create_notification(
-            db,
+        # Step 1: Rule Engine Analysis
+        # UX Step: "Analyzing contract..."
+        await asyncio.sleep(0.5) 
+        rule_issues = rule_engine.analyze(source)
+
+        # Step 2: Semantic Logic Review (Deep AI Audit)
+        # UX Step: "AI Brain performing deep logic audit..."
+        await asyncio.sleep(0.7)
+        semantic_issues = ai_engine.semantic_logic_review(source)
+        
+        # Merge issues
+        all_issues = rule_issues + semantic_issues
+
+        # Step 3: Scoring
+        # UX Step: "Calculating risk score..."
+        await asyncio.sleep(0.3)
+        score_data = score_engine.calculate(all_issues)
+
+        # Step 4: AI Reasoning (Explanation & Fix)
+        # UX Step: "AI Brain engaging remediation..."
+        await asyncio.sleep(0.6)
+        ai_result = ai_engine.analyze_code(source, all_issues)
+
+        # Step 5: PoC Test Generation (Optional/Premium)
+        # UX Step: "Finalizing PoC exploit..."
+        await asyncio.sleep(0.4)
+        poc_test = ai_engine.generate_poc_test(source, all_issues)
+
+        # Build final response
+        findings = [
+            {
+                "slug": issue.get("id", issue["name"].lower().replace(" ", "-")),
+                "label": issue["name"],
+                "severity": issue["severity"],
+                "confidence": 0.95 if "id" in issue else 0.82, # Higher for rule engine
+                "summary": issue["description"],
+                "recommendation": "Review sensitive logic and tighten state transitions.",
+                "line_numbers": issue.get("line_numbers", [])
+            }
+            for issue in all_issues
+        ]
+
+        final_result = {
+            "score": score_data["score"],
+            "severity": score_data["severity"],
+            "issues": [issue["name"] for issue in all_issues],
+            "findings": findings,
+            "steps": [
+                "Rule engine completed: Structural check finished.",
+                "AI brain performed a deep semantic logic audit.",
+                "Scoring engine calculated risk at " + str(score_data["score"]) + "/100.",
+                "AI brain generated audit explanation and secure rewrite.",
+                "AI synthesized a Proof-of-Concept exploit test."
+            ],
+
+            "explanation": ai_result["explanation"],
+            "fix": ai_result["fix"],
+            "poc_test": poc_test,
+            "confidence": 0.95 if rule_issues else 0.85,
+            "log_id": 0 # Default for now
+        }
+
+
+
+        # Log to DB (Existing functionality)
+        analysis_log = AnalysisLog(
             user_id=current_user.id,
-            title="Critical vulnerability detected" if result["prediction"] == "vulnerable" else "Analysis completed successfully",
-            body=snippet_from_code(source, 110),
-            severity="critical" if result["risk_score"] >= 70 else "info",
-            category="analysis",
-            action_url="/analyze",
-            source_type="analysis_log",
-            source_id=result["log_id"],
+            user_email=current_user.email,
+            source_code=source,
+            prediction="vulnerable" if rule_issues else "secure",
+            prob_secure=1.0 - (score_data["score"]/100.0),
+            prob_vulnerable=score_data["score"]/100.0,
+            confidence=final_result["confidence"],
+            model_source="hybrid-modular-v1",
         )
+        db.add(analysis_log)
+        db.commit()
+        db.refresh(analysis_log)
+        final_result["log_id"] = analysis_log.id
+
         usage_after = increment_usage(db, current_user)
-        result["remaining_today"] = usage_after["remaining_today"]
-        return result
+        final_result["remaining_today"] = usage_after["remaining_today"]
+        return final_result
+
 
     @router.post("/analyze/live", response_model=AnalysisResponse)
     async def analyze_contract_live(
@@ -601,23 +672,24 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
     @router.post("/fix-contract", response_model=FixContractResponse)
     async def fix_contract(payload: FixContractRequest, current_user: User = Depends(get_current_user)):
         source = payload.content
-        findings = infer_vulnerability_findings(source)
-        safe_patterns = infer_safe_patterns(source)
-        risk_score = compute_risk_score("vulnerable" if findings else "secure", 0.72 if findings else 0.28, findings)
-        fixed_code, highlighted_changes = generate_fixed_contract(source, findings)
-        autofix_preview = build_autofix_preview(findings, safe_patterns)
-        highlighted_changes = [autofix_preview, *highlighted_changes]
-        summary = build_analysis_summary(
-            "vulnerable" if findings else "secure",
-            risk_score,
-            findings,
-            safe_patterns,
-        )
+        if not source.strip():
+            raise HTTPException(status_code=400, detail="Contract source is required")
+        
+        rule_engine = RuleEngine()
+        ai_engine = AIEngine()
+        
+        # Detect issues to inform the AI
+        issues = rule_engine.analyze(source)
+        
+        # Generate the fix
+        result = ai_engine.analyze_code(source, issues)
+        
         return FixContractResponse(
-            fixed_code=fixed_code,
-            summary=summary,
-            highlighted_changes=highlighted_changes,
+            fixed_code=result["fix"],
+            summary=result["explanation"],
+            highlighted_changes=[f"Fixed {issue['name']}" for issue in issues] if issues else ["Optimized contract structure and safety patterns."]
         )
+
 
     @router.post("/api-keys", response_model=ApiKeyCreateResponse)
     async def create_api_key(payload: ApiKeyCreateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

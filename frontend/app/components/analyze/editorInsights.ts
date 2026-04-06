@@ -15,6 +15,20 @@ export function buildLineInsights(code: string, findings: AnalysisFinding[] = []
   const insights: LineInsight[] = [];
 
   for (const finding of findings) {
+    if (finding.line_numbers && finding.line_numbers.length) {
+      for (const lineNum of finding.line_numbers) {
+        insights.push({
+          lineNumber: lineNum,
+          severity: (finding.severity as LineInsight["severity"]) ?? "medium",
+          label: finding.label,
+          summary: finding.summary,
+          recommendation: finding.recommendation,
+          kind: "finding",
+        });
+      }
+      continue;
+    }
+
     const slug = finding.slug.toLowerCase();
     const label = finding.label;
     let lineNumber = 1;
@@ -38,6 +52,7 @@ export function buildLineInsights(code: string, findings: AnalysisFinding[] = []
       kind: "finding",
     });
   }
+
 
   if (fixedCode && fixedCode !== code) {
     const original = code.split("\n");
