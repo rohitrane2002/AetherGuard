@@ -197,8 +197,8 @@ export default function DashboardPage() {
               </Panel>
             ) : null}
 
-            <div className="grid items-start gap-6 xl:grid-cols-[1.04fr_0.96fr]">
-              <Panel className="p-8">
+            <div className="grid items-stretch gap-6 xl:grid-cols-[1.04fr_0.96fr]">
+              <Panel className="h-full p-8">
                 <div className="space-y-6">
                   <div className="space-y-6">
                     <div className="space-y-4">
@@ -311,8 +311,8 @@ export default function DashboardPage() {
                 </div>
               </Panel>
 
-              <Panel className="bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8">
-                <div className="flex flex-col gap-5">
+              <Panel className="h-full bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8">
+                <div className="flex h-full flex-col gap-5">
                     <div className="flex items-center gap-3">
                       <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-cyan-300" />
                       <div>
@@ -335,7 +335,7 @@ export default function DashboardPage() {
                         </button>
                       ))}
                     </div>
-                    <div className="scrollbar-thin min-h-[24rem] max-h-[34rem] space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4 xl:min-h-[28rem] xl:max-h-[38rem]">
+                    <div className="scrollbar-thin min-h-[24rem] flex-1 space-y-3 overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-4 xl:min-h-[28rem]">
                       {chatMessages.length === 0 ? (
                         <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
                           Ask for vulnerability explanations, secure rewrites, or exploit narratives.
@@ -370,6 +370,19 @@ export default function DashboardPage() {
                       <Button onClick={sendChat} disabled={sending}>
                         {sending ? "Streaming..." : "Send to Copilot"}
                       </Button>
+                    </div>
+                    <div className="grid gap-3 pt-1 sm:grid-cols-2">
+                      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-cyan-300">Operator cue</p>
+                        <p className="mt-3 text-sm font-medium text-white">
+                          {latestScan ? `Latest risk is ${latestScan.risk_score}/100 with ${latestScan.prediction} classification.` : "Run a scan to seed live operator context."}
+                        </p>
+                      </div>
+                      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">Memory window</p>
+                        <p className="mt-3 text-sm font-medium text-white">{chatMessages.length} chat turns in live context</p>
+                        <p className="mt-2 text-xs text-slate-400">Recent scans and prior answers stay attached to the copilot rail.</p>
+                      </div>
                     </div>
                 </div>
               </Panel>
