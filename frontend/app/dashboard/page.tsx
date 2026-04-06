@@ -214,11 +214,16 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
+                  <StatCard 
+                    label="Active Plan" 
+                    value={summary.account.plan} 
+                    helper={summary.account.plan === "founder" ? "Institutional Direct Access" : summary.account.status} 
+                    accent={summary.account.plan === "founder" ? "rose" : "cyan"}
+                  />
                   <StatCard
                     label="Usage Today"
-                    value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
-                    helper={`${summary.usage.remaining_today} scans remaining`}
+                    value={summary.usage.plan === "founder" ? "∞ / ∞" : `${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
+                    helper={summary.usage.plan === "founder" ? "Founder context: Unlimited scans" : `${summary.usage.remaining_today} scans remaining`}
                     accent="violet"
                   />
                   <StatCard
@@ -234,6 +239,7 @@ export default function DashboardPage() {
                     accent="emerald"
                   />
                 </div>
+
 
                 <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
                   <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">

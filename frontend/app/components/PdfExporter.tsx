@@ -55,17 +55,29 @@ export async function exportPdf(elementId: string) {
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 10;
     
-    const imgWidth = pageWidth - (margin * 2);
+    // Calculate how many pages we need
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
 
-    // If report is longer than one page, we just scale it to fit or we could add pages.
-    // For now, scale to fit width and handle overflow.
-    pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight, undefined, "FAST");
+    // Add first page
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+    heightLeft -= pageHeight;
+
+    // Add subsequent pages if needed
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+      heightLeft -= pageHeight;
+    }
     
-    pdf.save(`AetherGuard_Audit_${new Date().getTime()}.pdf`);
-    toast.success("Security Certificate Downloaded", { id: tid });
+    pdf.save(`AETHER_AUDIT_${new Date().getTime()}.pdf`);
+
+    toast.success("Enterprise security certificate generated.", { id: tid });
+
   } catch (err) {
     console.error("[PdfExporter] Critical failure:", err);
     toast.error("Audit synthesis failed. Use the 'Copy Fix' instead for now.", { id: tid });

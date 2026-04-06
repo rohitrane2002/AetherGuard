@@ -26,6 +26,16 @@ def get_or_create_usage_row(db: Session, user: User) -> UsageTracking:
 def get_user_usage(db: Session, user: User) -> dict:
     row = get_or_create_usage_row(db, user)
     daily_limit = get_daily_limit_for_plan(user.plan)
+    
+    # Founder plan bypass
+    if user.plan == "founder":
+        return {
+            "plan": "founder",
+            "daily_limit": 999999, # Visual representation of unlimited
+            "analyses_today": row.scan_count,
+            "remaining_today": 999999,
+        }
+        
     remaining_today = max(daily_limit - row.scan_count, 0)
     return {
         "plan": user.plan,
@@ -33,6 +43,7 @@ def get_user_usage(db: Session, user: User) -> dict:
         "analyses_today": row.scan_count,
         "remaining_today": remaining_today,
     }
+
 
 
 def increment_usage(db: Session, user: User) -> dict:

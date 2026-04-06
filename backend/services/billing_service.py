@@ -23,7 +23,9 @@ PLAN_DAILY_LIMITS = {
     "free": 5,
     "pro": 100,
     "enterprise": 1000000,
+    "founder": 1000000000, # Effectively unlimited
 }
+
 
 SUPPORTED_WEBHOOK_EVENTS = {
     "checkout.session.completed",
