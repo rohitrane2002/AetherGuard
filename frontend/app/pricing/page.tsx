@@ -99,9 +99,10 @@ export default function PricingPage() {
       }
       toast.success(data.plan === "free" ? "Plan reverted to Free" : "Plan upgraded successfully");
       setAccount((prev) => prev ? { ...prev, subscription_plan: data.plan, subscription_status: "active" } : null);
-    } catch (err) {
-      console.error("Checkout error:", err);
-      toast.error("Network error: Unable to reach billing server");
+    } catch (err: any) {
+      console.error("Checkout crash:", err);
+      const msg = err?.message || "Browser-level block or timeout";
+      toast.error(`ERROR: [/${API_BASE_URL}] ${msg}. Check Vercel logs.`, { duration: 8000 });
     } finally {
       setLoadingPriceId(null);
     }
