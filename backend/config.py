@@ -31,6 +31,7 @@ class Settings:
         )
         self.jwt_secret = os.getenv("JWT_SECRET", "dev-only-change-me")
         self.jwt_algorithm = os.getenv("JWT_ALGORITHM", "HS256")
+        self.encryption_key = os.getenv("ENCRYPTION_KEY", "uO6O7lXkRyV3J9-2N5A1-eM_hLzI2Gq0d9oXyA2mIbc=")  # Hardcoded default for fallback so we don't crash apps but they should overwrite in prod.
         self.access_token_expire_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
         self.refresh_token_expire_days = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
         self.stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")

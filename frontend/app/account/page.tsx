@@ -95,7 +95,6 @@ export default function AccountPage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-6xl space-y-6">
         <SectionHeading
           eyebrow="Account Center"

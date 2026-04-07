@@ -8,7 +8,27 @@ class AIEngine:
         self.base_url = settings.ai_base_url
         self.model = settings.ai_model
 
+    def _is_prompt_injection(self, code: str) -> bool:
+        """Basic heuristic to detect prompt injection attempts in code."""
+        suspicious_phrases = [
+            "ignore all previous instructions",
+            "you are not a security auditor",
+            "translate this",
+            "tell me a joke",
+            "system prompt",
+            "forget your instructions",
+            "bypass",
+        ]
+        code_lower = code.lower()
+        return any(phrase in code_lower for phrase in suspicious_phrases)
+
     def analyze_code(self, code: str, rule_issues: list[dict]) -> dict:
+        if self._is_prompt_injection(code):
+            return {
+                "explanation": "Analysis blocked: Suspicious prompt injection signature detected in the codebase.",
+                "fix": "// Security Exception: Code format violated guardrails."
+            }
+        
         if not self.api_key:
             return {
                 "explanation": "AI Analysis bypassed (No API Key).",
@@ -73,6 +93,9 @@ class AIEngine:
             }
 
     def generate_poc_test(self, code: str, rule_issues: list[dict]) -> str:
+        if self._is_prompt_injection(code):
+            return "// Security Exception: Prompt injection detected."
+            
         if not self.api_key or not rule_issues:
             return "// No issues detected to generate PoC test."
 
@@ -125,6 +148,9 @@ class AIEngine:
             return "// Error generating PoC test snippet."
 
     def semantic_logic_review(self, code: str) -> list[dict]:
+        if self._is_prompt_injection(code):
+            return [{"name": "Security Violation", "severity": "critical", "description": "Prompt injection detected.", "line_numbers": []}]
+            
         if not self.api_key:
             return []
 

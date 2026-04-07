@@ -4,7 +4,33 @@ import secrets
 from typing import Optional
 
 import bcrypt
+from cryptography.fernet import Fernet, InvalidToken
 
+from config import settings
+
+def _get_fernet() -> Fernet:
+    key = settings.encryption_key
+    try:
+        return Fernet(key)
+    except ValueError:
+        import base64
+        hashed_key = base64.urlsafe_b64encode(hashlib.sha256(key.encode()).digest())
+        return Fernet(hashed_key)
+
+def encrypt_secret(value: str | None) -> str | None:
+    """Encrypts a string for secure storage in the database."""
+    if not value:
+        return value
+    return _get_fernet().encrypt(value.encode("utf-8")).decode("utf-8")
+
+def decrypt_secret(value: str | None) -> str | None:
+    """Decrypts a securely stored string from the database."""
+    if not value:
+        return value
+    try:
+        return _get_fernet().decrypt(value.encode("utf-8")).decode("utf-8")
+    except InvalidToken:
+        return value
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")

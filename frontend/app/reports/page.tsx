@@ -78,7 +78,6 @@ export default function ReportsPage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-7xl space-y-6">
         <SectionHeading
           eyebrow="Audit Reports"

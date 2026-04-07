@@ -142,7 +142,6 @@ export default function AuthPage() {
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-8">
       <BackgroundGrid />
-      <Toaster position="top-right" />
       <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]">
         <div className="space-y-8">
           <SectionHeading

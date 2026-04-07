@@ -171,7 +171,6 @@ export default function WorkspacePage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-7xl space-y-6">
         <SectionHeading
           eyebrow="Team Workspace"

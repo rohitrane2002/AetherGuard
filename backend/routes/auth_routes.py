@@ -2,7 +2,7 @@ import uuid
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,10 +12,10 @@ from auth import (
     create_refresh_token,
     get_current_user,
     get_user_from_refresh_token,
-    revoke_refresh_token,
     hash_password,
     verify_password,
 )
+from services.security_service import encrypt_secret
 from config import settings
 from database import get_db
 from models import Subscription, User
@@ -27,6 +27,7 @@ from schemas import (
     UserResponse,
 )
 from services.workspace_service import ensure_personal_workspace, sync_pending_memberships_for_user
+from services.rate_limit_service import limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -34,7 +35,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # ─── Email/Password Auth ─────────────────────────────────────────────
 
 @router.post("/register", response_model=TokenPairResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register_user(request: Request, payload: UserRegisterRequest, db: Session = Depends(get_db)):
     existing_user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
     if existing_user is not None:
         raise HTTPException(status_code=409, detail="User already exists")
@@ -56,7 +58,8 @@ async def register_user(payload: UserRegisterRequest, db: Session = Depends(get_
 
 
 @router.post("/login", response_model=TokenPairResponse)
-async def login_user(payload: UserLoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login_user(request: Request, payload: UserLoginRequest, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
     if user is None or not user.password_hash or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -70,7 +73,8 @@ async def login_user(payload: UserLoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=TokenPairResponse)
-async def refresh_tokens(payload: RefreshTokenRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def refresh_tokens(request: Request, payload: RefreshTokenRequest, db: Session = Depends(get_db)):
     user = get_user_from_refresh_token(payload.refresh_token, db)
     revoke_refresh_token(payload.refresh_token, db)
     access_token = create_access_token(user.email)
@@ -112,7 +116,7 @@ def _upsert_oauth_user(
             provider=provider,
             avatar_url=avatar_url,
             github_username=github_username,
-            github_access_token=github_access_token,
+            github_access_token=encrypt_secret(github_access_token) if github_access_token else None,
         )
         db.add(user)
         db.commit()
@@ -130,7 +134,7 @@ def _upsert_oauth_user(
         if github_username:
             user.github_username = github_username
         if github_access_token:
-            user.github_access_token = github_access_token
+            user.github_access_token = encrypt_secret(github_access_token)
         if user.provider == "email":
             user.provider = provider
         db.commit()

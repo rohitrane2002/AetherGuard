@@ -64,7 +64,20 @@ async def lifespan(app: FastAPI):
 
 
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from services.rate_limit_service import limiter
+
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Rate limiting middleware
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -78,41 +91,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/admin/provision")
-async def provision_founder():
-    from database import SessionLocal
-    from models import User
-    from auth import hash_password
-    import uuid
+# Secure Headers Middleware
+@app.middleware("http")
+async def secure_headers_middleware(request: Request, call_next):
+    # Enforce request size limit (e.g., ~1MB max upload size outside of multipart forms if needed, here just basic checks if needed. We'll enforce at app level)
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > 10 * 1024 * 1024:  # 10MB sanity check
+        return JSONResponse(status_code=413, content={"detail": "Request too large"})
+        
+    response = await call_next(request)
     
-    db = SessionLocal()
-    email = "founder@aetherguard.dev"
-    password = "Rohit@171125"
+    # Infosec headers
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["Server"] = "AetherGuard-Internal" # Hide real server
     
-    try:
-        hashed = hash_password(password)
-        existing = db.query(User).filter(User.email == email).first()
-        if existing:
-            existing.password_hash = hashed
-            existing.plan = "founder"
-            existing.subscription_status = "active"
-            db.commit()
-            return {"status": "success", "message": f"Updated existing user {email}"}
-        else:
-            new_founder = User(
-                id=uuid.uuid4(),
-                email=email,
-                password_hash=hashed,
-                plan="founder",
-                subscription_status="active",
-                is_active=True
-            )
-            db.add(new_founder)
-            db.commit()
-            return {"status": "success", "message": f"Created new founder {email}"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-    finally:
-        db.close()
+    return response
+
+# Global Exception Handler to hide internal errors from end-users
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled exception on {request.method} {request.url}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred. This anomaly has been logged."},
+    )
 
 app.include_router(build_router(get_analyzer, get_analyzer_init_error))

@@ -167,7 +167,6 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-[1520px] space-y-8 pt-3 md:pt-5">
         <SectionHeading
           eyebrow="Command Center"

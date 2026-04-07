@@ -282,7 +282,6 @@ export default function AnalyzePage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-[1520px] space-y-6">
         <SectionHeading
           eyebrow="AI Workspace"

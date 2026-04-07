@@ -149,7 +149,6 @@ export default function ReposPage() {
     return (
       <main className="relative min-h-screen overflow-hidden px-4 py-8">
         <BackgroundGrid />
-        <Toaster position="top-right" />
         <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-2xl flex-col items-center justify-center text-center">
           <Panel className="w-full">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-white/5 border border-white/10">
@@ -203,7 +202,6 @@ export default function ReposPage() {
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-8">
       <BackgroundGrid />
-      <Toaster position="top-right" />
       <div className="relative mx-auto max-w-7xl">
         {/* ── Header ──────────────────────────────────────── */}
         <div className="mb-8 flex items-center justify-between">
