@@ -30,7 +30,7 @@ def get_user_usage(db: Session, user: User) -> dict:
     # Founder plan bypass
     if user.plan == "founder":
         return {
-            "plan": "founder",
+            "subscription_plan": "founder",
             "daily_limit": 999999, # Visual representation of unlimited
             "analyses_today": row.scan_count,
             "remaining_today": 999999,
@@ -38,7 +38,7 @@ def get_user_usage(db: Session, user: User) -> dict:
         
     remaining_today = max(daily_limit - row.scan_count, 0)
     return {
-        "plan": user.plan,
+        "subscription_plan": user.plan,
         "daily_limit": daily_limit,
         "analyses_today": row.scan_count,
         "remaining_today": remaining_today,

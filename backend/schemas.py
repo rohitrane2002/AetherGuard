@@ -41,14 +41,14 @@ class AccountResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
     is_active: bool
-    plan: str
+    subscription_plan: str
     subscription_status: str
     stripe_customer_id: Optional[str] = None
     created_at: datetime
 
 
 class UsageResponse(BaseModel):
-    plan: str
+    subscription_plan: str
     daily_limit: int
     analyses_today: int
     remaining_today: int
