@@ -100,9 +100,9 @@ export default function PricingPage() {
       toast.success(data.plan === "free" ? "Plan reverted to Free" : "Plan upgraded successfully");
       setAccount((prev) => prev ? { ...prev, subscription_plan: data.plan, subscription_status: "active" } : null);
     } catch (err: any) {
-      console.error("Checkout crash:", err);
+      console.error("Checkout crash URL:", `${API_BASE_URL}/ops/provision-subscription`, err);
       const msg = err?.message || "Browser-level block or timeout";
-      toast.error(`ERROR: [/${API_BASE_URL}] ${msg}. Check Vercel logs.`, { duration: 8000 });
+      toast.error(`ERROR: [${API_BASE_URL}] ${msg}. Check Vercel logs.`, { duration: 8000 });
     } finally {
       setLoadingPriceId(null);
     }
