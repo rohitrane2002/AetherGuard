@@ -6,7 +6,7 @@ const nextConfig = {
     return [
       {
         source: '/api/backend/:path*',
-        destination: '/api/backend/:path*',
+        destination: 'https://aetherguard-api.onrender.com/:path*',
       },
     ]
   },
