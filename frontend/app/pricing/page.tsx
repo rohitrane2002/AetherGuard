@@ -12,8 +12,9 @@ import AppShell from "../components/AppShell";
 import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, getAuthToken, isUnauthorizedStatus, redirectToAuth, warmBackend } from "../lib/auth";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
+const API_BASE_URL = typeof window !== "undefined" 
+  ? `${window.location.origin}/api/backend`
+  : "/api/backend";
 
 const plans = [
   {
