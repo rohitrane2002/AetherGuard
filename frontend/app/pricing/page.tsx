@@ -77,7 +77,7 @@ export default function PricingPage() {
   const startCheckout = async (priceId: string) => {
     setLoadingPriceId(priceId);
     try {
-      const response = await authFetch(`${API_BASE_URL}/create-checkout-session`, {
+      const response = await authFetch(`${API_BASE_URL}/ops/provision-subscription`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ price_id: priceId }),

@@ -363,7 +363,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         )
         return {"shared": True, "report_id": shared_report.id, "already_shared": False}
 
-    @router.post("/create-checkout-session", response_model=CheckoutSessionResponse)
+    @router.post("/ops/provision-subscription", response_model=CheckoutSessionResponse)
     async def create_checkout(payload: CheckoutSessionRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         session = create_checkout_session(payload.price_id, current_user.email)
         subscription = db.execute(
