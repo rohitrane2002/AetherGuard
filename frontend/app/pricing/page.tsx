@@ -78,19 +78,19 @@ export default function PricingPage() {
   const startCheckout = async (price_id: string) => {
     setLoadingPriceId(price_id);
     try {
-      const targetUrl = `${API_BASE_URL}/ops/provision-subscription`;
+      const targetUrl = `${API_BASE_URL}/ops/provision-subscription`.trim();
       toast(`[LOG] Dispatching to ${targetUrl}`, { icon: '🔍' });
       
-      const token = getAuthToken();
+      const token = getAuthToken()?.trim();
       const headers: any = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      toast(`[LOG] Sending payload to backend...`, { icon: '📡' });
+      toast(`[LOG] Sending cleaned payload...`, { icon: '📡' });
       
       const response = await fetch(targetUrl, {
         method: "POST",
         headers,
-        body: JSON.stringify({ price_id: price_id }),
+        body: JSON.stringify({ price_id: price_id.trim() }),
       });
       
       if (isUnauthorizedStatus(response.status)) {
