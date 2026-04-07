@@ -1,6 +1,7 @@
 export const AUTH_TOKEN_KEY = "aetherguard_access_token";
 export const REFRESH_TOKEN_KEY = "aetherguard_refresh_token";
 export const AUTH_USER_EMAIL_KEY = "aetherguard_user_email";
+export const AUTH_PROVIDER_KEY = "aetherguard_provider";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
@@ -23,15 +24,21 @@ export function getAuthEmail(): string | null {
   return window.localStorage.getItem(AUTH_USER_EMAIL_KEY);
 }
 
+export function getAuthProvider(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(AUTH_PROVIDER_KEY);
+}
+
 export function hasAuthSession(): boolean {
   return Boolean(getAuthToken());
 }
 
-export function storeAuthSession(accessToken: string, refreshToken: string, email: string) {
+export function storeAuthSession(accessToken: string, refreshToken: string, email: string, provider?: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
   window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   window.localStorage.setItem(AUTH_USER_EMAIL_KEY, email);
+  if (provider) window.localStorage.setItem(AUTH_PROVIDER_KEY, provider);
 }
 
 export function clearAuthSession() {
@@ -39,6 +46,7 @@ export function clearAuthSession() {
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
   window.localStorage.removeItem(AUTH_USER_EMAIL_KEY);
+  window.localStorage.removeItem(AUTH_PROVIDER_KEY);
 }
 
 export function redirectToAuth(clearSession = false) {

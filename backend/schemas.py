@@ -23,6 +23,8 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
     is_active: bool
+    provider: Optional[str] = "email"
+    avatar_url: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

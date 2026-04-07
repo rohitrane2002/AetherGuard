@@ -66,6 +66,13 @@ class Settings:
         self.database_url = self._normalize_database_url(
             os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE_PATH}")
         )
+        # OAuth
+        self.google_client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+        self.google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
+        self.github_client_id = os.getenv("GITHUB_CLIENT_ID", "")
+        self.github_client_secret = os.getenv("GITHUB_CLIENT_SECRET", "")
+        self.frontend_url = os.getenv("FRONTEND_URL", "https://aetherguard.vercel.app")
+        self.backend_url = os.getenv("BACKEND_URL", "https://aetherguard-api.onrender.com")
 
     @staticmethod
     def _normalize_database_url(database_url: str) -> str:

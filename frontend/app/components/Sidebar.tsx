@@ -7,6 +7,7 @@ import {
   Bars3Icon,
   BellAlertIcon,
   ChartBarSquareIcon,
+  CodeBracketSquareIcon,
   CreditCardIcon,
   HomeModernIcon,
   KeyIcon,
@@ -53,6 +54,7 @@ export default function Sidebar() {
       { href: "/", label: "Overview", icon: HomeModernIcon },
       { href: "/dashboard", label: "Command Center", icon: RectangleGroupIcon },
       { href: "/analyze", label: "AI Workspace", icon: SparklesIcon },
+      { href: "/repos", label: "GitHub Scanner", icon: CodeBracketSquareIcon },
       { href: "/workspace", label: "Team Workspace", icon: UserGroupIcon },
       { href: "/notifications", label: "Alerts", icon: BellAlertIcon },
       { href: "/reports", label: "Audit Reports", icon: ChartBarSquareIcon },
@@ -161,6 +163,9 @@ export default function Sidebar() {
               <div className="mt-3 grid gap-2">
                 <Link href="/analyze" className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-200 transition hover:border-cyan-400/30 hover:text-white">
                   Run live scan
+                </Link>
+                <Link href="/repos" className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/30 hover:text-white">
+                  GitHub Scanner
                 </Link>
                 <Link href="/workspace" className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-200 transition hover:border-violet-400/30 hover:text-white">
                   Open team workspace

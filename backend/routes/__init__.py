@@ -778,4 +778,62 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
     async def protected_failure_example(current_user: User = Depends(get_current_user)):
         return {"ok": True, "user": current_user.email}
 
+    # ─── GitHub Repo Scanner ─────────────────────────────────────────
+
+    @router.get("/github/repos")
+    async def list_github_repos(
+        page: int = Query(default=1, ge=1),
+        current_user: User = Depends(get_current_user),
+    ):
+        """List the authenticated user's GitHub repos (requires GitHub OAuth login)."""
+        if not current_user.github_access_token:
+            raise HTTPException(status_code=400, detail="GitHub account not linked. Please sign in with GitHub first.")
+        from services.github_service import fetch_github_repos
+        repos = await fetch_github_repos(current_user.github_access_token, page=page)
+        return {"repos": repos, "github_username": current_user.github_username}
+
+    @router.get("/github/repos/{owner}/{repo}/sol-files")
+    async def list_sol_files(
+        owner: str,
+        repo: str,
+        branch: str = Query(default="main"),
+        current_user: User = Depends(get_current_user),
+    ):
+        """Find all .sol files in a GitHub repository."""
+        if not current_user.github_access_token:
+            raise HTTPException(status_code=400, detail="GitHub account not linked.")
+        from services.github_service import fetch_sol_files
+        files = await fetch_sol_files(current_user.github_access_token, owner, repo, branch)
+        return {"files": files, "repo": f"{owner}/{repo}", "count": len(files)}
+
+    @router.post("/github/repos/{owner}/{repo}/scan")
+    async def scan_sol_file(
+        owner: str,
+        repo: str,
+        payload: dict,
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+    ):
+        """Fetch a .sol file from GitHub and run it through the analyzer."""
+        if not current_user.github_access_token:
+            raise HTTPException(status_code=400, detail="GitHub account not linked.")
+
+        file_path = payload.get("path", "")
+        if not file_path.endswith(".sol"):
+            raise HTTPException(status_code=400, detail="Only .sol files can be scanned")
+
+        from services.github_service import fetch_file_content
+        content = await fetch_file_content(current_user.github_access_token, owner, repo, file_path)
+        if content is None:
+            raise HTTPException(status_code=404, detail="File not found in repository")
+
+        analyzer = get_analyzer()
+        if analyzer is None:
+            raise HTTPException(status_code=503, detail="Analyzer is not ready")
+
+        result = run_analysis_and_log(db, analyzer, current_user, content)
+        result["file_path"] = file_path
+        result["repo"] = f"{owner}/{repo}"
+        return result
+
     return router

@@ -13,12 +13,16 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
     email: Mapped[str] = mapped_column(Text, nullable=False, unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
     plan: Mapped[str] = mapped_column(Text, nullable=False, default="free", server_default="free")
     scans_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     subscription_status: Mapped[str] = mapped_column(Text, nullable=False, default="inactive", server_default="inactive")
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    provider: Mapped[str] = mapped_column(Text, nullable=False, default="email", server_default="email")
+    avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    github_username: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    github_access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
