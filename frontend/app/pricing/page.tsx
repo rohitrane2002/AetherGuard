@@ -59,6 +59,11 @@ export default function PricingPage() {
     // Warm up the backend if it's been sleeping (Render Free Tier latency)
     warmBackend();
     
+    // Diagnostic check for reachability
+    fetch(`${API_BASE_URL}/health`).catch(() => {
+      toast.error(`DIAGNOSTIC: Backend at ${API_BASE_URL} is unreachable. Check your Vercel URL settings.`, { duration: 10000 });
+    });
+
     const load = async () => {
       const token = getAuthToken();
       if (!token) return;
