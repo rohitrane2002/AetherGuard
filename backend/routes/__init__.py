@@ -371,13 +371,14 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         ).scalar_one_or_none()
         if subscription is None:
             subscription = Subscription(user_id=current_user.id)
+        status = "active" if session["mode"] == "mock" or session["plan"] == "free" else "checkout_created"
         subscription.plan = session["plan"]
-        subscription.status = "checkout_created"
+        subscription.status = status
         subscription.stripe_customer_id = session["customer_id"]
         subscription.stripe_price_id = session["price_id"]
         subscription.stripe_subscription_id = session["subscription_id"]
         current_user.plan = session["plan"]
-        current_user.subscription_status = "checkout_created"
+        current_user.subscription_status = status
         current_user.stripe_customer_id = session["customer_id"]
         db.add(subscription)
         db.add(current_user)

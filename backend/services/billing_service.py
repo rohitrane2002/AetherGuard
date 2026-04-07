@@ -19,6 +19,12 @@ if settings.stripe_price_id_pro:
 if settings.stripe_price_id_enterprise:
     PLAN_BY_PRICE_ID[settings.stripe_price_id_enterprise] = "enterprise"
 
+REAL_PRICE_ID_BY_MOCK = {
+    "price_free_mock": settings.stripe_price_id_free,
+    "price_pro_mock": settings.stripe_price_id_pro,
+    "price_enterprise_mock": settings.stripe_price_id_enterprise,
+}
+
 PLAN_DAILY_LIMITS = {
     "free": 5,
     "pro": 100,
@@ -62,8 +68,10 @@ def configure_stripe() -> None:
 
 
 def create_checkout_session(price_id: str, customer_email: str) -> dict:
-    if not stripe_is_configured():
-        plan = get_plan_from_price_id(price_id)
+    plan = get_plan_from_price_id(price_id)
+    real_price_id = REAL_PRICE_ID_BY_MOCK.get(price_id, price_id)
+
+    if not stripe_is_configured() or plan == "free" or not real_price_id:
         return {
             "session_id": f"cs_test_{uuid4().hex[:24]}",
             "customer_id": f"cus_{uuid4().hex[:14]}",
@@ -80,22 +88,22 @@ def create_checkout_session(price_id: str, customer_email: str) -> dict:
     session = stripe.checkout.Session.create(
         mode="subscription",
         payment_method_types=["card"],
-        line_items=[{"price": price_id, "quantity": 1}],
+        line_items=[{"price": real_price_id, "quantity": 1}],
         customer_email=customer_email,
         success_url=settings.stripe_success_url,
         cancel_url=settings.stripe_cancel_url,
         metadata={
             "customer_email": customer_email,
-            "price_id": price_id,
-            "plan": get_plan_from_price_id(price_id),
+            "price_id": real_price_id,
+            "plan": plan,
         },
     )
     return {
         "session_id": session.id,
         "customer_id": session.customer,
         "subscription_id": session.subscription,
-        "price_id": price_id,
-        "plan": get_plan_from_price_id(price_id),
+        "price_id": real_price_id,
+        "plan": plan,
         "customer_email": customer_email,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "checkout_url": session.url,

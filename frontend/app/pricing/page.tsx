@@ -84,7 +84,8 @@ export default function PricingPage() {
       window.location.href = data.checkoutUrl;
       return;
     }
-    toast.success("Checkout session created");
+    toast.success(data.plan === "free" ? "Plan reverted to Free" : "Plan upgraded successfully");
+    setAccount((prev) => prev ? { ...prev, subscription_plan: data.plan, subscription_status: "active" } : null);
   };
 
   const metrics = useMemo(
