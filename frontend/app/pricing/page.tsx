@@ -13,7 +13,7 @@ import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, getAuthToken, isUnauthorizedStatus, redirectToAuth, warmBackend } from "../lib/auth";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
 const plans = [
   {

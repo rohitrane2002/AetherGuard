@@ -10,7 +10,7 @@ import { useProtectedRoute } from "../lib/useProtectedRoute";
 import { authFetch } from "../lib/auth";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
 type Repo = {
   id: number;

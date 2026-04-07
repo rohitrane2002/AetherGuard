@@ -24,7 +24,7 @@ import { authFetch, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
 const STARTER_CONTRACT = `pragma solidity ^0.8.20;
 

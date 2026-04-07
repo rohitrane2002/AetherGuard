@@ -4,7 +4,7 @@ export const AUTH_USER_EMAIL_KEY = "aetherguard_user_email";
 export const AUTH_PROVIDER_KEY = "aetherguard_provider";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
 let backendWarmupPromise: Promise<boolean> | null = null;
 let backendReady = false;

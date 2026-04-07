@@ -15,7 +15,7 @@ import { authFetch, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
 
 type DashboardSummary = {
   account: { id: number; email: string; plan: string; status: string };
