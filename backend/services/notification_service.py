@@ -1,5 +1,6 @@
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from models import AnalysisLog, Notification, SharedReport, Subscription, TeamMembership, User
 from services.security_service import snippet_from_code
@@ -26,9 +27,9 @@ def create_notification(
     body: str,
     severity: str = "info",
     category: str = "system",
-    action_url: str | None = None,
-    source_type: str | None = None,
-    source_id: int | None = None,
+    action_url: Optional[str] = None,
+    source_type: Optional[str] = None,
+    source_id: Optional[int] = None,
 ) -> Notification:
     if source_type is not None and source_id is not None:
         existing = db.execute(

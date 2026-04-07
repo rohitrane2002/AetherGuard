@@ -1,5 +1,6 @@
 import uuid
 from urllib.parse import urlencode
+from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -100,9 +101,9 @@ def _upsert_oauth_user(
     *,
     email: str,
     provider: str,
-    avatar_url: str | None = None,
-    github_username: str | None = None,
-    github_access_token: str | None = None,
+    avatar_url: Optional[str] = None,
+    github_username: Optional[str] = None,
+    github_access_token: Optional[str] = None,
 ) -> User:
     """Find or create a user from an OAuth provider."""
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
