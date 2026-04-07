@@ -75,13 +75,22 @@ export default function PricingPage() {
     load();
   }, []);
 
-  const startCheckout = async (priceId: string) => {
-    setLoadingPriceId(priceId);
+  const startCheckout = async (price_id: string) => {
+    setLoadingPriceId(price_id);
     try {
-      const response = await authFetch(`${API_BASE_URL}/ops/provision-subscription`, {
+      const targetUrl = `${API_BASE_URL}/ops/provision-subscription`;
+      toast(`[LOG] Dispatching to ${targetUrl}`, { icon: '🔍' });
+      
+      const token = getAuthToken();
+      const headers: any = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      toast(`[LOG] Sending payload to backend...`, { icon: '📡' });
+      
+      const response = await fetch(targetUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ price_id: priceId }),
+        headers,
+        body: JSON.stringify({ price_id: price_id }),
       });
       
       if (isUnauthorizedStatus(response.status)) {
@@ -103,7 +112,7 @@ export default function PricingPage() {
     } catch (err: any) {
       console.error("Checkout crash URL:", `${API_BASE_URL}/ops/provision-subscription`, err);
       const msg = err?.message || "Browser-level block or timeout";
-      toast.error(`ERROR: [${API_BASE_URL}] ${msg}. Check Vercel logs.`, { duration: 8000 });
+      toast.error(`ERROR: [${API_BASE_URL}] ${msg}. Check Vercel logs.`, { duration: 10000 });
     } finally {
       setLoadingPriceId(null);
     }
