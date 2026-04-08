@@ -35,6 +35,8 @@ export default function GrowthAdminPage() {
     setLoading(true);
     try {
       const res = await fetch("https://aetherguard-api.onrender.com/growth/trigger-seo-batch", { method: "POST" });
+      const data = await res.json();
+      console.log("SEO Response:", data);
       if (res.ok) {
         toast.success("SEO Encyclopedia Batch Triggered!");
         fetchStats();
@@ -49,6 +51,7 @@ export default function GrowthAdminPage() {
     try {
       const res = await fetch("https://aetherguard-api.onrender.com/growth/generate-social", { method: "POST" });
       const data = await res.json();
+      console.log("Social Response:", data);
       setSocialContent(data);
       toast.success("Daily Social Content Generated!");
     } finally {
@@ -162,23 +165,43 @@ export default function GrowthAdminPage() {
 
             {socialContent && (
               <div className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4">
-                <div className="space-y-2">
-                   <h3 className="text-xs font-bold uppercase text-emerald-400">Twitter Thread</h3>
-                   <div className="bg-black/40 rounded-xl p-4 border border-white/5 space-y-4">
-                      {socialContent.twitter_thread?.map((tweet: string, i: number) => (
-                        <div key={i} className="text-sm text-gray-300 font-mono pb-4 border-b border-white/5 last:border-0 last:pb-0">
-                           {tweet}
-                        </div>
-                      ))}
-                   </div>
-                </div>
+                {socialContent.error && (
+                  <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-rose-400 text-sm">
+                    <p className="font-bold">Generation Error:</p>
+                    <p className="opacity-80">{socialContent.error}</p>
+                  </div>
+                )}
+
+                {socialContent.twitter_thread && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold uppercase text-emerald-400">Twitter Thread</h3>
+                    <div className="bg-black/40 rounded-xl p-4 border border-white/5 space-y-4">
+                        {socialContent.twitter_thread.map((tweet: string, i: number) => (
+                          <div key={i} className="text-sm text-gray-300 font-mono pb-4 border-b border-white/5 last:border-0 last:pb-0">
+                            {tweet}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
                 
-                <div className="space-y-2">
-                   <h3 className="text-xs font-bold uppercase text-blue-400">LinkedIn Post</h3>
-                   <div className="bg-black/40 rounded-xl p-4 border border-white/5 text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
-                      {socialContent.linkedin_post}
+                {socialContent.linkedin_post && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold uppercase text-blue-400">LinkedIn Post</h3>
+                    <div className="bg-black/40 rounded-xl p-4 border border-white/5 text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
+                        {socialContent.linkedin_post}
+                    </div>
+                  </div>
+                )}
+
+                {!socialContent.twitter_thread && !socialContent.error && socialContent.raw_response && (
+                   <div className="space-y-2">
+                      <h3 className="text-xs font-bold uppercase text-amber-400">Raw AI Response</h3>
+                      <div className="bg-black/40 rounded-xl p-4 border border-white/5 text-sm text-gray-400 whitespace-pre-wrap">
+                         {socialContent.raw_response}
+                      </div>
                    </div>
-                </div>
+                )}
               </div>
             )}
           </Panel>
