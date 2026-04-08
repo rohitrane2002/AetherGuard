@@ -70,7 +70,7 @@ export default function PricingPage() {
     setLoadingPriceId(priceId);
     try {
       const token = getAuthToken()?.trim();
-      const res = await fetch(`${window.location.origin}/gateway/ops/provision-subscription`, {
+      const res = await fetch(`/api/proxy`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
