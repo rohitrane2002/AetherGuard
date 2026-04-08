@@ -3,9 +3,7 @@ export const REFRESH_TOKEN_KEY = "aetherguard_refresh_token";
 export const AUTH_USER_EMAIL_KEY = "aetherguard_user_email";
 export const AUTH_PROVIDER_KEY = "aetherguard_provider";
 
-const API_BASE_URL = typeof window !== "undefined"
-  ? `${window.location.origin}/api/backend`
-  : "/api/backend";
+const API_BASE_URL = "https://aetherguard-api.onrender.com";
 
 let backendWarmupPromise: Promise<boolean> | null = null;
 let backendReady = false;

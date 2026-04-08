@@ -5,7 +5,7 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/backend/:path*',
+        source: 'https://aetherguard-api.onrender.com/:path*',
         destination: 'https://aetherguard-api.onrender.com/:path*',
       },
     ]

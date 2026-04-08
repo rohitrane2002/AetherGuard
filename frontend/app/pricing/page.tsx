@@ -68,9 +68,10 @@ export default function PricingPage() {
 
   const startCheckout = async (priceId: string) => {
     setLoadingPriceId(priceId);
+    const backendUrl = "https://aetherguard-api.onrender.com";
     try {
       const token = getAuthToken();
-      const res = await fetch("/api/checkout", {
+      const res = await fetch(`${backendUrl}/ops/provision-subscription`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,6 +103,7 @@ export default function PricingPage() {
       setLoadingPriceId(null);
     }
   };
+
 
   const metrics = useMemo(
     () => [

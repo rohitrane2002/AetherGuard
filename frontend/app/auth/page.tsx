@@ -15,7 +15,7 @@ import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { hasAuthSession, isBackendWarm, storeAuthSession, warmBackend } from "../lib/auth";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
 
 type AuthSuccessPayload = {
   access_token: string;

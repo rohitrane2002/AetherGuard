@@ -21,7 +21,7 @@ import {
 import { authFetch, getAuthEmail } from "../lib/auth";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/backend";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
 
 export default function Sidebar() {
   const pathname = usePathname();
