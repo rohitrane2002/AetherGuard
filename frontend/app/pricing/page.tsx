@@ -69,8 +69,8 @@ export default function PricingPage() {
   const startCheckout = async (priceId: string) => {
     setLoadingPriceId(priceId);
     try {
-      const token = getAuthToken();
-      const res = await fetch(`/gateway/ops/provision-subscription`, {
+      const token = getAuthToken()?.trim();
+      const res = await fetch(`${window.location.origin}/gateway/ops/provision-subscription`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

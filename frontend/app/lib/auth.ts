@@ -10,7 +10,8 @@ let backendReady = false;
 
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(AUTH_TOKEN_KEY);
+  const token = window.localStorage.getItem(AUTH_TOKEN_KEY);
+  return token ? token.trim() : null;
 }
 
 export function getRefreshToken(): string | null {
