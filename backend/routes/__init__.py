@@ -366,9 +366,9 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
     @router.post("/ops/provision-subscription", response_model=CheckoutSessionResponse)
     async def create_checkout(payload: CheckoutSessionRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         session = create_checkout_session(payload.price_id, current_user.email)
-        subscription = db.execute(
+        subscription = db.scalars(
             select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
-        ).scalar_one_or_none()
+        ).first()
         if subscription is None:
             subscription = Subscription(user_id=current_user.id)
         status = "active" if session["mode"] == "mock" or session["plan"] == "free" else "checkout_created"
@@ -396,9 +396,9 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     @router.post("/create-billing-portal-session", response_model=BillingPortalResponse)
     async def create_billing_portal(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-        subscription = db.execute(
+        subscription = db.scalars(
             select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
-        ).scalar_one_or_none()
+        ).first()
         customer_id = None
         if subscription and subscription.stripe_customer_id:
             customer_id = subscription.stripe_customer_id
@@ -456,18 +456,18 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         if user is None and stripe_customer_id:
             user = db.execute(select(User).where(User.stripe_customer_id == stripe_customer_id)).scalar_one_or_none()
         if user is None and stripe_customer_id:
-            subscription_user = db.execute(
+            subscription_user = db.scalars(
                 select(Subscription).where(Subscription.stripe_customer_id == stripe_customer_id).order_by(Subscription.id.desc())
-            ).scalar_one_or_none()
+            ).first()
             if subscription_user is not None:
                 user = db.execute(select(User).where(User.id == subscription_user.user_id)).scalar_one_or_none()
 
         if user is None:
             raise HTTPException(status_code=404, detail="User not found for Stripe event")
 
-        subscription = db.execute(
+        subscription = db.scalars(
             select(Subscription).where(Subscription.user_id == user.id).order_by(Subscription.id.desc())
-        ).scalar_one_or_none()
+        ).first()
         if subscription is None:
             subscription = Subscription(user_id=user.id)
 
