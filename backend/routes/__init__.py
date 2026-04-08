@@ -365,34 +365,39 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     @router.post("/ops/provision-subscription", response_model=CheckoutSessionResponse)
     async def create_checkout(payload: CheckoutSessionRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-        session = create_checkout_session(payload.price_id, current_user.email)
-        subscription = db.scalars(
-            select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
-        ).first()
-        if subscription is None:
-            subscription = Subscription(user_id=current_user.id)
-        status = "active" if session["mode"] == "mock" or session["plan"] == "free" else "checkout_created"
-        subscription.plan = session["plan"]
-        subscription.status = status
-        subscription.stripe_customer_id = session["customer_id"]
-        subscription.stripe_price_id = session["price_id"]
-        subscription.stripe_subscription_id = session["subscription_id"]
-        current_user.plan = session["plan"]
-        current_user.subscription_status = status
-        current_user.stripe_customer_id = session["customer_id"]
-        db.add(subscription)
-        db.add(current_user)
-        db.commit()
-        return CheckoutSessionResponse(
-            sessionId=session["session_id"],
-            customerId=session["customer_id"],
-            priceId=session["price_id"],
-            plan=session["plan"],
-            customerEmail=session["customer_email"],
-            createdAt=session["created_at"],
-            checkoutUrl=session["checkout_url"],
-            mode=session["mode"],
-        )
+        try:
+            session = create_checkout_session(payload.price_id, current_user.email)
+            subscription = db.scalars(
+                select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
+            ).first()
+            if subscription is None:
+                subscription = Subscription(user_id=current_user.id)
+            status = "active" if session["mode"] == "mock" or session["plan"] == "free" else "checkout_created"
+            subscription.plan = session["plan"]
+            subscription.status = status
+            subscription.stripe_customer_id = session["customer_id"]
+            subscription.stripe_price_id = session["price_id"]
+            subscription.stripe_subscription_id = session["subscription_id"]
+            current_user.plan = session["plan"]
+            current_user.subscription_status = status
+            current_user.stripe_customer_id = session["customer_id"]
+            db.add(subscription)
+            db.add(current_user)
+            db.commit()
+            return CheckoutSessionResponse(
+                sessionId=session["session_id"],
+                customerId=session["customer_id"],
+                priceId=session["price_id"],
+                plan=session["plan"],
+                customerEmail=session["customer_email"],
+                createdAt=session["created_at"],
+                checkoutUrl=session["checkout_url"],
+                mode=session["mode"],
+            )
+        except Exception as e:
+            print(f"CHECKOUT ERROR DIAGNOSTIC: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Diagnostic error: {str(e)}")
+
 
     @router.post("/create-billing-portal-session", response_model=BillingPortalResponse)
     async def create_billing_portal(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
