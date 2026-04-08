@@ -64,7 +64,10 @@ def stripe_is_configured() -> bool:
 
 def configure_stripe() -> None:
     if settings.stripe_secret_key:
-        stripe.api_key = settings.stripe_secret_key.strip()
+        key = settings.stripe_secret_key.strip()
+        if "*" in key or "•" in key:
+            raise ValueError("It looks like you copied a MASKED Stripe key (with asterisks or dots). Please go to Stripe Dashboard and click 'REVEAL TEST KEY' before copying the full key.")
+        stripe.api_key = key
 
 
 def create_checkout_session(price_id: str, customer_email: str) -> dict:
