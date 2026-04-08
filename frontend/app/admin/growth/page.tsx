@@ -61,6 +61,7 @@ export default function GrowthAdminPage() {
       <div className="max-w-6xl mx-auto py-12 px-4 space-y-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <SectionHeading 
+            eyebrow="Strategy"
             title="Growth Engine Admin" 
             subtitle="Automated acquisition, SEO, and social ghostwriting dashboard."
           />
@@ -75,23 +76,20 @@ export default function GrowthAdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard 
             label="pSEO Encyclopedia Pages" 
-            value={stats?.seo_pages_live || 0} 
+            value={String(stats?.seo_pages_live || 0)} 
             helper="Live on /audit/[slug]"
-            icon={MagnifyingGlassCircleIcon}
           />
           <StatCard 
             label="Pro Subscription Users" 
-            value={stats?.pro_users || 0} 
+            value={String(stats?.pro_users || 0)} 
             accent="violet"
             helper="Active monthly revenue"
-            icon={CurrencyDollarIcon}
           />
           <StatCard 
             label="Growth Engine State" 
             value="Active" 
             accent="emerald"
             helper="Multi-agent system operational"
-            icon={RocketLaunchIcon}
           />
         </div>
 
