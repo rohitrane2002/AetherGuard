@@ -107,6 +107,7 @@ class SEOAgent:
 
     def automate_encyclopedia(self):
         """Batch generates pages for all major vulnerability topics using a fresh session if needed."""
+        import time
         # Use existing session or create a new one for long-running background tasks
         session_to_use = self.db if self.db else SessionLocal()
         
@@ -114,6 +115,8 @@ class SEOAgent:
             for topic in VULNERABILITY_TOPICS:
                 self.db = session_to_use
                 self.generate_page(topic)
+                # Respect rate limits for free models
+                time.sleep(5)
         finally:
             if not self.db: # Only close if we created it here
                 session_to_use.close()
