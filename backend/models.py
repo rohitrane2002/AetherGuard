@@ -20,6 +20,7 @@ class User(Base):
     subscription_status: Mapped[str] = mapped_column(Text, nullable=False, default="inactive", server_default="inactive")
     total_credits: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
     is_pro: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
     provider: Mapped[str] = mapped_column(Text, nullable=False, default="email", server_default="email")
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

@@ -204,6 +204,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             id=current_user.id,
             email=current_user.email,
             is_active=current_user.is_active,
+            is_admin=current_user.is_admin,
             subscription_plan=subscription.plan if subscription else current_user.plan,
             subscription_status=subscription.status if subscription else current_user.subscription_status,
             stripe_customer_id=subscription.stripe_customer_id if subscription else current_user.stripe_customer_id,

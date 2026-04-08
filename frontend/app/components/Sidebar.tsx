@@ -12,6 +12,7 @@ import {
   HomeModernIcon,
   KeyIcon,
   RectangleGroupIcon,
+  RocketLaunchIcon,
   ShieldCheckIcon,
   SparklesIcon,
   UserGroupIcon,
@@ -28,6 +29,7 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const email = getAuthEmail();
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export default function Sidebar() {
       if (accountRes.ok) {
         const account = await accountRes.json();
         setPlan(account.subscription_plan ?? null);
+        setIsAdmin(account.is_admin || false);
       }
       if (usageRes.ok) {
         const usage = await usageRes.json();
@@ -50,19 +53,27 @@ export default function Sidebar() {
   }, [email]);
 
   const links = useMemo(
-    () => [
-      { href: "/", label: "Overview", icon: HomeModernIcon },
-      { href: "/dashboard", label: "Command Center", icon: RectangleGroupIcon },
-      { href: "/analyze", label: "AI Workspace", icon: SparklesIcon },
-      { href: "/repos", label: "GitHub Scanner", icon: CodeBracketSquareIcon },
-      { href: "/workspace", label: "Team Workspace", icon: UserGroupIcon },
-      { href: "/notifications", label: "Alerts", icon: BellAlertIcon },
-      { href: "/reports", label: "Audit Reports", icon: ChartBarSquareIcon },
-      { href: "/pricing", label: "Plans", icon: CreditCardIcon },
-      { href: "/account", label: "Account", icon: UserCircleIcon },
-      { href: `${API_BASE_URL}/docs`, label: "API Docs", icon: KeyIcon, external: true },
-    ],
-    []
+    () => {
+      const base = [
+        { href: "/", label: "Overview", icon: HomeModernIcon },
+        { href: "/dashboard", label: "Command Center", icon: RectangleGroupIcon },
+        { href: "/analyze", label: "AI Workspace", icon: SparklesIcon },
+        { href: "/repos", label: "GitHub Scanner", icon: CodeBracketSquareIcon },
+        { href: "/workspace", label: "Team Workspace", icon: UserGroupIcon },
+        { href: "/notifications", label: "Alerts", icon: BellAlertIcon },
+        { href: "/reports", label: "Audit Reports", icon: ChartBarSquareIcon },
+        { href: "/pricing", label: "Plans", icon: CreditCardIcon },
+        { href: "/account", label: "Account", icon: UserCircleIcon },
+        { href: `${API_BASE_URL}/docs`, label: "API Docs", icon: KeyIcon, external: true },
+      ];
+
+      if (isAdmin) {
+        base.splice(1, 0, { href: "/admin/growth", label: "Growth Hub", icon: RocketLaunchIcon });
+      }
+
+      return base;
+    },
+    [isAdmin]
   );
 
   return (

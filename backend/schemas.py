@@ -41,6 +41,7 @@ class AccountResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
     is_active: bool
+    is_admin: bool
     subscription_plan: str
     subscription_status: str
     stripe_customer_id: Optional[str] = None
@@ -52,6 +53,7 @@ class UsageResponse(BaseModel):
     daily_limit: int
     analyses_today: int
     remaining_today: int
+    total_credits: int
 
 
 class CheckoutSessionRequest(BaseModel):
