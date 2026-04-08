@@ -7,14 +7,10 @@ import {
   CheckBadgeIcon,
   SparklesIcon,
 } from "@heroicons/react/24/solid";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import AppShell from "../components/AppShell";
 import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
-import { authFetch, getAuthToken, isUnauthorizedStatus, redirectToAuth, warmBackend } from "../lib/auth";
-
-const API_BASE_URL = typeof window !== "undefined" 
-  ? `${window.location.origin}/api/backend`
-  : "/api/backend";
+import { getAuthToken, redirectToAuth } from "../lib/auth";
 
 const plans = [
   {
@@ -57,49 +53,39 @@ export default function PricingPage() {
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Warm up the backend if it's been sleeping (Render Free Tier latency)
-    warmBackend();
-    
-    // Diagnostic check for reachability
-    fetch(`${API_BASE_URL}/health`).catch(() => {
-      toast.error(`DIAGNOSTIC: Backend at ${API_BASE_URL} is unreachable. Check your Vercel URL settings.`, { duration: 10000 });
-    });
-
     const load = async () => {
       const token = getAuthToken();
       if (!token) return;
-      const response = await authFetch(`${API_BASE_URL}/account`);
-      if (!response.ok) return;
-      setAccount(await response.json());
+      try {
+        const res = await fetch("/api/account", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setAccount(await res.json());
+      } catch { /* ignore on load */ }
     };
     load();
   }, []);
 
-  const startCheckout = async (price_id: string) => {
-    setLoadingPriceId(price_id);
+  const startCheckout = async (priceId: string) => {
+    setLoadingPriceId(priceId);
     try {
-      const targetUrl = `${API_BASE_URL}/ops/provision-subscription`.trim();
-      toast(`[LOG] Dispatching to ${targetUrl}`, { icon: '🔍' });
-      
-      const token = getAuthToken()?.trim();
-      const headers: any = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      toast(`[LOG] Sending cleaned payload...`, { icon: '📡' });
-      
-      const response = await fetch(targetUrl, {
+      const token = getAuthToken();
+      const res = await fetch("/api/checkout", {
         method: "POST",
-        headers,
-        body: JSON.stringify({ price_id: price_id.trim() }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ price_id: priceId }),
       });
-      
-      if (isUnauthorizedStatus(response.status)) {
+
+      if (res.status === 401) {
         redirectToAuth(true);
         return;
       }
 
-      const data = await response.json();
-      if (!response.ok) {
+      const data = await res.json();
+      if (!res.ok) {
         toast.error(data.detail || "Checkout failed");
         return;
       }
@@ -107,12 +93,11 @@ export default function PricingPage() {
         window.location.href = data.checkoutUrl;
         return;
       }
-      toast.success(data.plan === "free" ? "Plan reverted to Free" : "Plan upgraded successfully");
+      toast.success(data.plan === "free" ? "Plan reverted to Free" : "Plan upgraded successfully!");
       setAccount((prev) => prev ? { ...prev, subscription_plan: data.plan, subscription_status: "active" } : null);
     } catch (err: any) {
-      console.error("Checkout crash URL:", `${API_BASE_URL}/ops/provision-subscription`, err);
-      const msg = err?.message || "Browser-level block or timeout";
-      toast.error(`ERROR: [${API_BASE_URL}] ${msg}. Check Vercel logs.`, { duration: 10000 });
+      console.error("Checkout error:", err);
+      toast.error(err?.message || "Something went wrong. Please try again.");
     } finally {
       setLoadingPriceId(null);
     }
