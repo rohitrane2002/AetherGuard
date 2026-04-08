@@ -18,12 +18,29 @@ class User(Base):
     plan: Mapped[str] = mapped_column(Text, nullable=False, default="free", server_default="free")
     scans_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     subscription_status: Mapped[str] = mapped_column(Text, nullable=False, default="inactive", server_default="inactive")
+    total_credits: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_pro: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
     provider: Mapped[str] = mapped_column(Text, nullable=False, default="email", server_default="email")
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     github_username: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     github_access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class GrowthPage(Base):
+    __tablename__ = "growth_pages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    slug: Mapped[str] = mapped_column(Text, nullable=False, unique=True, index=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    meta_description: Mapped[str] = mapped_column(Text, nullable=False)
+    content_html: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(Text, nullable=False, index=True) # e.g. "audit", "tool", "vulnerability"
+    keywords: Mapped[str] = mapped_column(Text, nullable=True)
+    author_ai_name: Mapped[str] = mapped_column(Text, nullable=False, default="AetherGuard SEO")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class Subscription(Base):

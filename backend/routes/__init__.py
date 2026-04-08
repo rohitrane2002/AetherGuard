@@ -27,6 +27,7 @@ from config import settings
 from database import get_db
 from models import AnalysisLog, SharedReport, Subscription, TeamMembership, User
 from routes.auth_routes import router as auth_router
+from routes.growth import router as growth_router
 from schemas import (
     AccountResponse,
     ApiKeyCreateRequest,
@@ -129,6 +130,8 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         if not rate_limiter.allow(f"user:{user.id}", settings.user_rate_limit_per_minute, 60):
             raise HTTPException(status_code=429, detail="Too many requests for this user")
 
+    router.include_router(growth_router)
+    
     @router.get("/health", response_model=HealthResponse)
     async def health_check(db: Session = Depends(get_db)):
         database_connected = True
