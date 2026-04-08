@@ -53,15 +53,23 @@ class SocialAgent:
 
         payload = {
             "model": settings.ai_model,
-            "messages": [{"role": "user", "content": prompt}],
-            "response_format": {"type": "json_object"}
+            "messages": [{"role": "user", "content": prompt}]
         }
 
         try:
             response = requests.post(f"{self.api_url}/chat/completions", headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
-            return json.loads(data["choices"][0]["message"]["content"])
+            content = data["choices"][0]["message"]["content"]
+            
+            # Robust JSON cleaning: Find the first { and last }
+            start = content.find("{")
+            end = content.rfind("}") + 1
+            if start == -1 or end == 0:
+                raise ValueError(f"No JSON found in social content: {content[:100]}...")
+
+            clean_json = content[start:end]
+            return json.loads(clean_json)
         except Exception as e:
             logger.error(f"Social Agent failed: {str(e)}")
-            return {"error": str(e)}
+            return {"error": str(e), "raw_response": content if 'content' in locals() else None}

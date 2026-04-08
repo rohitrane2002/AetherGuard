@@ -67,15 +67,23 @@ class SEOAgent:
 
         payload = {
             "model": settings.ai_model,
-            "messages": [{"role": "user", "content": prompt}],
-            "response_format": {"type": "json_object"}
+            "messages": [{"role": "user", "content": prompt}]
         }
 
         try:
             response = requests.post(f"{self.api_url}/chat/completions", headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
-            page_data = json.loads(data["choices"][0]["message"]["content"])
+            content = data["choices"][0]["message"]["content"]
+            
+            # Robust JSON cleaning: Find the first { and last }
+            start = content.find("{")
+            end = content.rfind("}") + 1
+            if start == -1 or end == 0:
+                raise ValueError(f"No JSON object found in AI response: {content[:100]}...")
+                
+            clean_json = content[start:end]
+            page_data = json.loads(clean_json)
             
             new_page = GrowthPage(
                 slug=slug,

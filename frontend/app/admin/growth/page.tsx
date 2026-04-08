@@ -56,6 +56,21 @@ export default function GrowthAdminPage() {
     }
   };
 
+  const testAI = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("https://aetherguard-api.onrender.com/growth/test-ai");
+      const data = await res.json();
+      if (data.status === "success") {
+        toast.success(`AI Online: ${data.response}`);
+      } else {
+        toast.error(`AI Error: ${data.detail}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AppShell>
       <div className="max-w-6xl mx-auto py-12 px-4 space-y-12">
@@ -66,6 +81,9 @@ export default function GrowthAdminPage() {
             subtitle="Automated acquisition, SEO, and social ghostwriting dashboard."
           />
           <div className="flex gap-4">
+             <Button tone="ghost" onClick={testAI} disabled={loading} className="flex items-center gap-2">
+               Test AI Connectivity
+             </Button>
              <Button tone="ghost" onClick={fetchStats} className="flex items-center gap-2">
                <ArrowPathIcon className="w-4 h-4" /> Refresh
              </Button>

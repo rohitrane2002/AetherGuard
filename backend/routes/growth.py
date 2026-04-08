@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+import requests
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
@@ -52,3 +53,23 @@ async def get_growth_stats(db: Session = Depends(get_db)):
         "pro_users": pro_users,
         "growth_efficiency": "High"
     }
+
+@router.get("/test-ai")
+async def test_ai():
+    """Diagnostic endpoint to test AI connectivity."""
+    from config import settings
+    headers = {
+        "Authorization": f"Bearer {settings.openai_api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": settings.ai_model,
+        "messages": [{"role": "user", "content": "Return the word 'AetherGuard-Live' and nothing else."}]
+    }
+    try:
+        response = requests.post(f"{settings.ai_base_url}/chat/completions", headers=headers, json=payload, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        return {"status": "success", "response": data["choices"][0]["message"]["content"]}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
