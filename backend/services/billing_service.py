@@ -64,7 +64,7 @@ def stripe_is_configured() -> bool:
 
 def configure_stripe() -> None:
     if settings.stripe_secret_key:
-        stripe.api_key = settings.stripe_secret_key
+        stripe.api_key = settings.stripe_secret_key.strip()
 
 
 def create_checkout_session(price_id: str, customer_email: str) -> dict:
@@ -144,7 +144,11 @@ def parse_webhook(payload: bytes, signature: Optional[str]) -> dict:
     if not stripe_is_configured() or not settings.stripe_webhook_secret:
         raise ValueError("Stripe webhook verification is not configured")
     configure_stripe()
-    return stripe.Webhook.construct_event(payload=payload, sig_header=signature, secret=settings.stripe_webhook_secret)
+    return stripe.Webhook.construct_event(
+        payload=payload, 
+        sig_header=signature, 
+        secret=settings.stripe_webhook_secret.strip()
+    )
 
 
 def _epoch_to_datetime(value: Optional[int]) -> Optional[datetime]:
