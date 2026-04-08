@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
@@ -37,11 +37,11 @@ async def get_hub_pages(
     return pages
 
 @router.post("/trigger-seo-batch")
-async def trigger_seo_batch(db: Session = Depends(get_db)):
-    """Triggers the SEO Agent to generate the standard encyclopedia batch."""
+async def trigger_seo_batch(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Triggers the SEO Agent to generate the standard encyclopedia batch as a background task."""
     agent = SEOAgent(db)
-    agent.automate_encyclopedia()
-    return {"status": "Batch generation triggered"}
+    background_tasks.add_task(agent.automate_encyclopedia)
+    return {"status": "Batch generation triggered in background. This may take 2-5 minutes to complete."}
 
 @router.get("/stats")
 async def get_growth_stats(db: Session = Depends(get_db)):

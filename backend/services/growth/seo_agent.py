@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from config import settings
 from models import GrowthPage
+from database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +98,14 @@ class SEOAgent:
             return None
 
     def automate_encyclopedia(self):
-        """Batch generates pages for all major vulnerability topics."""
-        for topic in VULNERABILITY_TOPICS:
-            self.generate_page(topic)
+        """Batch generates pages for all major vulnerability topics using a fresh session if needed."""
+        # Use existing session or create a new one for long-running background tasks
+        session_to_use = self.db if self.db else SessionLocal()
+        
+        try:
+            for topic in VULNERABILITY_TOPICS:
+                self.db = session_to_use
+                self.generate_page(topic)
+        finally:
+            if not self.db: # Only close if we created it here
+                session_to_use.close()
