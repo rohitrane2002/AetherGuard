@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BoltIcon,
   CheckBadgeIcon,
   CodeBracketSquareIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
   WrenchScrewdriverIcon,
 } from "@heroicons/react/24/solid";
-
 import toast, { Toaster } from "react-hot-toast";
 import AppShell from "../components/AppShell";
 import { exportPdf } from "../components/PdfExporter";
@@ -17,9 +15,8 @@ import ContractEditorPanel from "../components/analyze/ContractEditorPanel";
 import CopilotPanel from "../components/analyze/CopilotPanel";
 import ScanProgressPanel from "../components/analyze/ScanProgressPanel";
 import { buildLineInsights } from "../components/analyze/editorInsights";
-import AuditReportTemplate from "../components/analyze/AuditReportTemplate";
 import type { AnalysisResult, CopilotMessage } from "../components/analyze/types";
-import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
+import { BenchmarkingChart, Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
 
@@ -57,13 +54,11 @@ const countTone: Record<"critical" | "high" | "medium", string> = {
 };
 
 const fullScanSteps = [
-  ["Rule Engine Analysis", "Running deterministic pattern checks for Reentrancy and Access Control."],
-  ["AI Logic Audit", "Engaging the neural logic layers to find deep semantic flaws or logic bypasses."],
-  ["Vulnerability Scoring", "Evaluating cumulative risks and building the weighted security score."],
-  ["AI Reasoner Choice", "Consulting the LLM brain for audit explanations, Proof-of-Concepts, and secure rewrites."],
+  ["Analyzing contract", "Parsing Solidity and building execution graph."],
+  ["Checking reentrancy", "Inspecting external calls against state mutation order."],
+  ["Detecting vulnerabilities", "Combining heuristics with model classification."],
+  ["Preparing remediation", "Building the summary, fixes, and PDF-ready report."],
 ] as const;
-
-
 
 const liveScanSteps = [
   ["Watching code changes", "Debounced live scanner monitoring the current buffer."],
@@ -208,6 +203,24 @@ export default function AnalyzePage() {
     }
   };
 
+  const downloadReport = async () => {
+    if (!result?.log_id) return;
+    try {
+      const response = await authFetch(`${API_BASE_URL}/reports/${result.log_id}/download`);
+      if (response.ok) {
+        const data = await response.json();
+        const blob = new Blob([data.content], { type: "text/markdown" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = data.filename;
+        a.click();
+      }
+    } catch (err) {
+      toast.error("Failed to download report");
+    }
+  };
+
   const streamCopilot = async (prompt: string) => {
     setSending(true);
     setCopilotMessages((current) => [...current, { role: "user", content: prompt }, { role: "assistant", content: "" }]);
@@ -261,14 +274,6 @@ export default function AnalyzePage() {
 
   const issueCounts = useMemo(() => {
     const findings = activeResult?.findings ?? [];
-    if (!findings.length && activeResult?.issues.length) {
-      // Use fallback issues from modular engine
-      return {
-        critical: activeResult.severity === "high" ? 1 : 0,
-        high: activeResult.severity === "medium" && activeResult.score >= 50 ? 1 : 0,
-        medium: activeResult.severity === "low" && activeResult.score > 0 ? 1 : 0,
-      };
-    }
     return {
       critical: findings.filter((item) => item.severity === "critical").length,
       high: findings.filter((item) => item.severity === "high").length,
@@ -282,6 +287,7 @@ export default function AnalyzePage() {
 
   return (
     <AppShell>
+      <Toaster position="top-right" />
       <div className="mx-auto max-w-[1520px] space-y-6">
         <SectionHeading
           eyebrow="AI Workspace"
@@ -290,10 +296,10 @@ export default function AnalyzePage() {
         />
 
         <div className="grid gap-4 lg:grid-cols-4">
-          <StatCard label="Live posture" value={activeResult?.severity ?? activeResult?.prediction ?? "watching"} helper={liveLoading ? "Refreshing signals..." : "Real-time scanner online"} />
+          <StatCard label="Live posture" value={activeResult?.prediction ?? "watching"} helper={liveLoading ? "Refreshing signals..." : "Real-time scanner online"} />
           <StatCard label="Confidence" value={confidenceLabel} helper="Model certainty on active context" accent="violet" />
           <StatCard label="Remaining scans" value={activeResult ? String(activeResult.remaining_today) : "--"} helper="Daily premium allowance" accent="emerald" />
-          <StatCard label="Current plan" value={activeResult ? `${activeResult.score ?? activeResult.risk_score ?? "--"}/100` : "--"} helper="Security score across the active contract" accent="amber" />
+          <StatCard label="Current plan" value={activeResult ? `${activeResult.risk_score}/100` : "--"} helper="Security score across the active contract" accent="amber" />
         </div>
 
         <ContractEditorPanel
@@ -309,19 +315,9 @@ export default function AnalyzePage() {
           onSelectLine={setSelectedLine}
           onAnalyze={analyze}
           onFix={fixContract}
-          onExport={() => exportPdf("audit-report-export")}
+          onExport={downloadReport}
           fixing={fixing}
-
         />
-
-        {/* Hidden PDF Export Container (Off-screen for canvas capture) */}
-        <div style={{ position: "absolute", left: "-9999px", top: 0, visibility: "visible" }} aria-hidden="true">
-          <div id="audit-report-export" style={{ width: "1024px" }}>
-            {activeResult && <AuditReportTemplate result={activeResult} code={code} />}
-          </div>
-        </div>
-
-
 
         <div className="space-y-6">
           <div>
@@ -360,11 +356,15 @@ export default function AnalyzePage() {
                     />
                   </div>
                   <div className="mt-5 flex items-end justify-between gap-4">
-                    <div className="text-6xl font-semibold tracking-tight text-white">{activeResult?.score ?? activeResult?.risk_score ?? 0}</div>
+                    <div className="text-6xl font-semibold tracking-tight text-white">{activeResult?.risk_score ?? 0}</div>
                     <div className="max-w-[12rem] text-right text-sm leading-6 text-slate-400">
                       Weighted contract exposure across exploitable flows, privilege surfaces, and arithmetic hygiene.
                     </div>
                   </div>
+                </div>
+
+                <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                  <BenchmarkingChart data={activeResult?.benchmarks} />
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-3">
@@ -432,7 +432,7 @@ export default function AnalyzePage() {
 
                   <div className="panel-sheen rounded-[24px] border border-white/10 bg-white/5 p-5">
                     <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Contract summary</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-300">{activeResult.explanation ?? activeResult.summary}</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-300">{activeResult.summary}</p>
                   </div>
 
                   <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
@@ -512,22 +512,6 @@ export default function AnalyzePage() {
                 <p className="mt-3 text-sm leading-7 text-slate-300">{activeResult?.autofix_preview ?? "Run analysis to preview the recommended secure rewrite direction."}</p>
               </div>
             </Panel>
-
-            <Panel className="self-start">
-              <div className="flex items-center gap-3">
-                <BoltIcon className="h-5 w-5 text-fuchsia-400" />
-                <div>
-                  <h2 className="text-2xl font-semibold text-white">Exploit PoC</h2>
-                  <p className="text-sm text-slate-400">AI-generated evidence test to prove the highest risk finding.</p>
-                </div>
-              </div>
-              <div className="mt-5 rounded-[20px] border border-fuchsia-400/10 bg-fuchsia-500/5 p-4">
-                <pre className="overflow-x-auto text-[13px] leading-6 text-slate-300">
-                  <code className="whitespace-pre-wrap break-words">{activeResult?.poc_test ?? "// Run a full audit to generate an exploit Proof-of-Concept."}</code>
-                </pre>
-              </div>
-            </Panel>
-
           </div>
         </div>
       </div>

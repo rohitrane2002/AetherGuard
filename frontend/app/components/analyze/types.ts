@@ -7,36 +7,27 @@ export type AnalysisFinding = {
   confidence: number;
   summary: string;
   recommendation: string;
-  line_numbers: number[];
+  language?: string;
 };
-
 
 export type AnalysisResult = {
-  score: number;
-  severity: string;
-  issues: string[];
-  steps: string[];
-  explanation: string;
-  fix: string;
-  poc_test?: string;
+  prediction: string;
+  prob_secure: number;
+  prob_vulnerable: number;
+  email: string;
   log_id: number;
-
+  model_source: string;
   confidence: number;
   remaining_today: number;
-  // Backward compatibility
-  prediction?: string;
-  prob_secure?: number;
-  prob_vulnerable?: number;
-  email?: string;
-  model_source?: string;
-  risk_score?: number;
-  findings?: AnalysisFinding[];
-  safe_patterns?: string[];
-  summary?: string;
-  fix_suggestions?: string[];
-  autofix_preview?: string;
+  risk_score: number;
+  findings: AnalysisFinding[];
+  safe_patterns: string[];
+  summary: string;
+  fix_suggestions: string[];
+  autofix_preview: string;
+  benchmarks?: any;
+  report_url?: string;
 };
-
 
 export type CopilotMessage = {
   role: string;

@@ -134,3 +134,38 @@ export function RiskMeter({ score, compact = false }: { score: number; compact?:
     </div>
   );
 }
+export function BenchmarkingChart({ data }: { data: any }) {
+  if (!data) return null;
+  const metrics = [
+    { label: "You", value: data.current_score, color: "bg-cyan-400" },
+    { label: "Industry", value: data.industry_avg, color: "bg-slate-500" },
+    { label: "DeFi", value: data.defi_avg, color: "bg-violet-500" },
+    { label: "NFT", value: data.nft_avg, color: "bg-emerald-500" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">Market Benchmarking</p>
+        <span className="text-xs text-slate-500">Percentile: {data.percentile}th</span>
+      </div>
+      <div className="space-y-3">
+        {metrics.map((m) => (
+          <div key={m.label} className="space-y-1">
+            <div className="flex justify-between text-[10px] uppercase tracking-wider text-slate-400">
+              <span>{m.label}</span>
+              <span>{m.value}/100</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-900 border border-white/5">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${m.value}%` }}
+                className={clsx("h-full rounded-full shadow-[0_0_10px_rgba(34,211,238,0.2)]", m.color)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

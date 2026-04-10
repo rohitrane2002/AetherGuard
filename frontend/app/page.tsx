@@ -11,6 +11,7 @@ import ScanSection from "./components/ScanSection";
 import ScrollStory from "./components/ScrollStory";
 import ThreatIntelligence from "./components/ThreatIntelligence";
 import WorkflowSteps from "./components/WorkflowSteps";
+import Footer from "./components/Footer";
 
 type DeviceTier = "mobile" | "tablet" | "desktop";
 const EASING = [0.22, 1, 0.36, 1];
@@ -233,6 +234,7 @@ export default function Home() {
           </div>
         </motion.section>
       </div>
+      <Footer />
     </main>
   );
 }
