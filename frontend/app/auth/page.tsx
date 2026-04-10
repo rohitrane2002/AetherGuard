@@ -12,7 +12,7 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import BackgroundGrid from "../components/BackgroundGrid";
 import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
-import { hasAuthSession, isBackendWarm, storeAuthSession, warmBackend } from "../lib/auth";
+import { hasAuthSession, isBackendWarm, resilientFetch, storeAuthSession, warmBackend } from "../lib/auth";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
@@ -103,11 +103,15 @@ export default function AuthPage() {
         await warmBackend();
       }
       const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await resilientFetch(
+        `${API_BASE_URL}${endpoint}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        },
+        { retries: 1, retryDelayMs: 900 }
+      );
       const raw = await response.text();
       let data: Record<string, unknown> = {};
       if (raw) {
@@ -123,6 +127,7 @@ export default function AuthPage() {
       }
       const authData = data as unknown as AuthSuccessPayload;
       storeAuthSession(authData.access_token, authData.refresh_token, authData.user.email);
+      await warmBackend();
       toast.success(mode === "login" ? "Welcome back" : "Workspace created");
       router.push(nextPath || "/dashboard");
     } catch (error) {
