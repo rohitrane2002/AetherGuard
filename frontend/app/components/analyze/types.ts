@@ -12,6 +12,7 @@ export type AnalysisFinding = {
 
 export type AnalysisResult = {
   prediction: string;
+  severity?: string;
   prob_secure: number;
   prob_vulnerable: number;
   email: string;
@@ -23,6 +24,8 @@ export type AnalysisResult = {
   findings: AnalysisFinding[];
   safe_patterns: string[];
   summary: string;
+  explanation?: string;
+  poc_test?: string;
   fix_suggestions: string[];
   autofix_preview: string;
   benchmarks?: any;
