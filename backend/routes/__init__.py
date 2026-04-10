@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, text
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from auth import (
@@ -19,6 +20,7 @@ from billing import (
     create_billing_portal_session,
     create_checkout_session,
     extract_webhook_details,
+    get_daily_limit_for_plan,
     get_plan_from_price_id,
     parse_webhook,
     stripe_is_configured,
@@ -131,6 +133,95 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         if not rate_limiter.allow(f"user:{user.id}", settings.user_rate_limit_per_minute, 60):
             raise HTTPException(status_code=429, detail="Too many requests for this user")
 
+    def _is_schema_drift_error(exc: Exception) -> bool:
+        if isinstance(exc, (OperationalError, ProgrammingError)):
+            return True
+        message = str(exc).lower()
+        drift_markers = (
+            "does not exist",
+            "undefined table",
+            "undefined column",
+            "no such table",
+            "no such column",
+            "relation ",
+            "column ",
+        )
+        return any(marker in message for marker in drift_markers)
+
+    def _fallback_usage(current_user: User) -> dict:
+        plan = getattr(current_user, "plan", "free")
+        total_credits = getattr(current_user, "total_credits", 0) or 0
+        if plan == "founder":
+            return {
+                "subscription_plan": "founder",
+                "daily_limit": 999999,
+                "analyses_today": 0,
+                "remaining_today": 999999,
+                "total_credits": total_credits,
+            }
+
+        daily_limit = get_daily_limit_for_plan(plan)
+        return {
+            "subscription_plan": plan,
+            "daily_limit": daily_limit,
+            "analyses_today": 0,
+            "remaining_today": daily_limit,
+            "total_credits": total_credits,
+        }
+
+    def _fallback_workspace(current_user: User) -> dict:
+        workspace_name = f"{current_user.email.split('@')[0].replace('.', ' ').title()} Security"
+        return {
+            "team_name": workspace_name,
+            "members": 1,
+            "role": "Owner",
+            "shared_reports": 0,
+            "notification_metrics": {"total": 0, "unread": 0, "critical": 0},
+        }
+
+    def _safe_usage(db: Session, current_user: User) -> dict:
+        try:
+            return get_user_usage(db, current_user)
+        except Exception as exc:
+            if not _is_schema_drift_error(exc):
+                raise
+            return _fallback_usage(current_user)
+
+    def _safe_workspace_counts(db: Session, current_user: User) -> dict:
+        try:
+            return workspace_counts(db, current_user)
+        except Exception as exc:
+            if not _is_schema_drift_error(exc):
+                raise
+            return _fallback_workspace(current_user)
+
+    def _safe_notifications(db: Session, current_user: User) -> tuple[list[dict], dict]:
+        try:
+            feed = list_notifications(db, current_user, limit=8)
+            totals = notification_metrics(db, current_user)
+            return feed, totals
+        except Exception as exc:
+            if not _is_schema_drift_error(exc):
+                raise
+            empty = {"total": 0, "unread": 0, "critical": 0}
+            return [], empty
+
+    def _safe_chat_history(db: Session, current_user: User) -> list[dict]:
+        try:
+            return get_chat_history(db, current_user, limit=12)
+        except Exception as exc:
+            if not _is_schema_drift_error(exc):
+                raise
+            return []
+
+    def _safe_api_keys(db: Session, current_user: User):
+        try:
+            return list_api_keys(db, current_user)
+        except Exception as exc:
+            if not _is_schema_drift_error(exc):
+                raise
+            return []
+
     router.include_router(growth_router)
     
     @router.get("/health", response_model=HealthResponse)
@@ -159,13 +250,12 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             subscription = db.execute(
                 select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
             ).scalar_one_or_none()
-            usage = get_user_usage(db, current_user)
+            usage = _safe_usage(db, current_user)
             recent_logs = db.execute(
                 select(AnalysisLog).where(AnalysisLog.user_id == current_user.id).order_by(AnalysisLog.id.desc()).limit(6)
             ).scalars().all()
-            workspace = workspace_counts(db, current_user)
-            notifications_feed = list_notifications(db, current_user, limit=8)
-            notification_totals = notification_metrics(db, current_user)
+            workspace = _safe_workspace_counts(db, current_user)
+            notifications_feed, notification_totals = _safe_notifications(db, current_user)
             
             recent_scans = [
                 {
@@ -188,7 +278,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
                 },
                 usage=usage,
                 recent_scans=recent_scans,
-                chat_history=get_chat_history(db, current_user, limit=12),
+                chat_history=_safe_chat_history(db, current_user),
                 notifications=notifications_feed,
                 workspace={**workspace, "notification_metrics": notification_totals},
             )
@@ -214,7 +304,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     @router.get("/usage", response_model=UsageResponse)
     async def read_usage(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-        return UsageResponse(**get_user_usage(db, current_user))
+        return UsageResponse(**_safe_usage(db, current_user))
 
     @router.get("/workspace", response_model=WorkspaceResponse)
     async def read_workspace(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -757,7 +847,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     @router.get("/api-keys", response_model=list[ApiKeyResponse])
     async def get_api_keys(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-        return list_api_keys(db, current_user)
+        return _safe_api_keys(db, current_user)
 
     @router.post("/api/analyze")
     async def api_key_analyze(
