@@ -8,6 +8,7 @@ export type AnalysisFinding = {
   summary: string;
   recommendation: string;
   language?: string;
+  line_numbers?: number[];
 };
 
 export type AnalysisResult = {
