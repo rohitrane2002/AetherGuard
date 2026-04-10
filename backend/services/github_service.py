@@ -56,8 +56,9 @@ async def fetch_github_repos(access_token: str, page: int = 1, per_page: int = 3
         ]
 
 
-async def fetch_sol_files(access_token: str, owner: str, repo: str, branch: str = "main") -> list[dict]:
-    """Recursively find all .sol files in a repository."""
+async def fetch_security_files(access_token: str, owner: str, repo: str, branch: str = "main") -> list[dict]:
+    """Recursively find all security-relevant files (.sol, .rs, .move, .go) in a repository."""
+    extensions = {".sol", ".rs", ".move", ".go", ".cairo"}
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.get(
             f"{GITHUB_API_BASE}/repos/{owner}/{repo}/git/trees/{branch}",
@@ -70,12 +71,12 @@ async def fetch_sol_files(access_token: str, owner: str, repo: str, branch: str 
         resp.raise_for_status()
         tree = resp.json().get("tree", [])
 
-        sol_files = [
+        security_files = [
             {"path": item["path"], "sha": item["sha"], "size": item.get("size", 0)}
             for item in tree
-            if item["type"] == "blob" and item["path"].endswith(".sol")
+            if item["type"] == "blob" and any(item["path"].endswith(ext) for ext in extensions)
         ]
-        return sol_files
+        return security_files
 
 
 async def fetch_file_content(access_token: str, owner: str, repo: str, path: str) -> Optional[str]:

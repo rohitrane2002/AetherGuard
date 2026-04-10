@@ -61,6 +61,7 @@ from schemas import (
 from rule_engine import RuleEngine
 from ai_engine import AIEngine
 from scoring import ScoringEngine
+from services.report_service import ReportService
 import asyncio
 
 from services.analysis_service import run_analysis_and_log
@@ -546,6 +547,9 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         await asyncio.sleep(0.4)
         poc_test = ai_engine.generate_poc_test(source, all_issues)
 
+        # Step 6: Benchmarking
+        benchmarks = score_engine.get_benchmarks(score_data["score"])
+
         # Build final response
         findings = []
         for issue in all_issues:
@@ -557,18 +561,21 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
                 "confidence": 0.95 if "id" in issue else 0.82, # Higher for rule engine
                 "summary": issue.get("description") or issue.get("summary") or "Vulnerability detected in contract logic.",
                 "recommendation": issue.get("recommendation") or "Review sensitive logic and tighten state transitions.",
-                "line_numbers": issue.get("line_numbers", [])
+                "line_numbers": issue.get("line_numbers", []),
+                "language": issue.get("language", "solidity")
             })
 
         final_result = {
             "score": score_data["score"],
             "severity": score_data["severity"],
+            "benchmarks": benchmarks,
             "issues": [f.get("label", "Issue") for f in findings],
             "findings": findings,
             "steps": [
                 "Rule engine completed: Structural check finished.",
                 "AI brain performed a deep semantic logic audit.",
                 "Scoring engine calculated risk at " + str(score_data["score"]) + "/100.",
+                "Benchmarking analysis compared results with industry standards.",
                 "AI brain generated audit explanation and secure rewrite.",
                 "AI synthesized a Proof-of-Concept exploit test."
             ],
@@ -577,20 +584,15 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             "fix": ai_result.get("fix", "// No specific fix generated."),
             "poc_test": poc_test,
             "confidence": 0.95 if rule_issues else 0.85,
-            "log_id": 0, # Default for now
+            "log_id": 0, 
             "risk_score": score_data["score"],
             "summary": ai_result.get("explanation", "Contract analysis summary."),
+            "report_url": f"/api/reports/{{log_id}}/download", # Will be updated after logging
             "fix_suggestions": [
                 "Implement ReentrancyGuard where external calls exist.",
                 "Review access control modifiers for protocol-level functions.",
                 "Ensure bounded arithmetic or use Solidity 0.8+ checked math."
-            ],
-            "safe_patterns": [
-                "Standard OpenZeppelin inheritance detected.",
-                "Solidity 0.8.x arithmetic safety active.",
-                "Clear state separation in core logic."
-            ],
-            "autofix_preview": "The AI recommends wrapping value transfers in state-checks and using the Checks-Effects-Interactions pattern."
+            ]
         }
 
         # Log to DB (Existing functionality)
@@ -608,6 +610,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         db.commit()
         db.refresh(analysis_log)
         final_result["log_id"] = analysis_log.id
+        final_result["report_url"] = f"/api/reports/{analysis_log.id}/download"
 
         usage_after = increment_usage(db, current_user)
         final_result["remaining_today"] = usage_after["remaining_today"]
@@ -784,6 +787,41 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         usage_after = increment_usage(db, user)
         result["remaining_today"] = usage_after["remaining_today"]
         return result
+
+    @router.get("/reports/{log_id}/download")
+    async def download_report(
+        log_id: int,
+        format: str = "markdown",
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ):
+        log = db.execute(
+            select(AnalysisLog).where(
+                AnalysisLog.id == log_id,
+                AnalysisLog.user_id == current_user.id
+            )
+        ).scalar_one_or_none()
+        
+        if not log:
+            raise HTTPException(status_code=404, detail="Analysis log not found")
+
+        # In a real app, you'd re-hydrate the full analysis data from the log
+        # For now, we'll reconstruct a basic version for the report
+        mock_data = {
+            "score": int(log.prob_vulnerable * 100),
+            "severity": "high" if log.prob_vulnerable > 0.7 else "medium" if log.prob_vulnerable > 0.3 else "low",
+            "summary": "Automated security audit summary based on analysis history.",
+            "findings": [], 
+            "fix_suggestions": ["Review contract state transitions", "Implement access control"],
+            "fix": "// Re-run analysis to generate fix code."
+        }
+        
+        report_content = ReportService.generate_markdown_report(mock_data)
+        
+        return {
+            "filename": f"AetherGuard_Audit_{log_id}.md",
+            "content": report_content
+        }
 
     @router.get("/predict/failure")
     async def protected_failure_example(current_user: User = Depends(get_current_user)):

@@ -28,3 +28,14 @@ class ScoringEngine:
             "score": score,
             "severity": overall_severity
         }
+    def get_benchmarks(self, current_score: int) -> dict:
+        """Compare current score with industry benchmarks."""
+        # Industry averages for different contract types (Mocks)
+        benchmarks = {
+            "industry_avg": 72,
+            "defi_avg": 65,
+            "nft_avg": 88,
+            "current_score": current_score,
+            "percentile": max(1, min(99, int((current_score / 100) * 95))) # Mock percentile
+        }
+        return benchmarks

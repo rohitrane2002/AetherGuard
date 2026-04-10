@@ -216,3 +216,52 @@ class AIEngine:
         except Exception as e:
             print(f"Semantic Review Error: {e}")
             return []
+    def chat(self, message: str, context: dict = None) -> str:
+        """General chat method for the security copilot."""
+        if not self.api_key:
+            return "AI Chat is currently disabled (No API Key)."
+
+        context_str = ""
+        if context:
+            if "code" in context:
+                context_str += f"\nContract Code:\n```solidity\n{context['code']}\n```"
+            if "issues" in context:
+                context_str += f"\nDetected Issues:\n{json.dumps(context['issues'], indent=2)}"
+
+        prompt = f"""
+        {context_str}
+        
+        User Question: {message}
+        
+        Task:
+        As a senior Web3 security auditor, answer the user's question. 
+        If they are asking about the code provided in the context, be specific.
+        If no context is provided, give general best practices.
+        Keep your response concise, professional, and developer-focused.
+        Use markdown for formatting.
+        """
+
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "X-Title": settings.ai_app_name,
+                "HTTP-Referer": settings.ai_app_url
+            }
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": "You are a senior Web3 security copilot. You help developers write secure smart contracts and understand vulnerabilities."},
+                    {"role": "user", "content": prompt}
+                ]
+            }
+            
+            with httpx.Client(timeout=30.0) as client:
+                response = client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
+                response.raise_for_status()
+                data = response.json()
+            
+            return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(f"AI Chat Error: {e}")
+            return "I'm sorry, I'm having trouble processing your request right now."

@@ -7,6 +7,7 @@ export type AnalysisFinding = {
   confidence: number;
   summary: string;
   recommendation: string;
+  language?: string;
 };
 
 export type AnalysisResult = {
@@ -24,6 +25,8 @@ export type AnalysisResult = {
   summary: string;
   fix_suggestions: string[];
   autofix_preview: string;
+  benchmarks?: any;
+  report_url?: string;
 };
 
 export type CopilotMessage = {

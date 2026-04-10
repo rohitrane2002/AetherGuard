@@ -16,7 +16,7 @@ import CopilotPanel from "../components/analyze/CopilotPanel";
 import ScanProgressPanel from "../components/analyze/ScanProgressPanel";
 import { buildLineInsights } from "../components/analyze/editorInsights";
 import type { AnalysisResult, CopilotMessage } from "../components/analyze/types";
-import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
+import { BenchmarkingChart, Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
 
@@ -203,6 +203,24 @@ export default function AnalyzePage() {
     }
   };
 
+  const downloadReport = async () => {
+    if (!result?.log_id) return;
+    try {
+      const response = await authFetch(`${API_BASE_URL}/reports/${result.log_id}/download`);
+      if (response.ok) {
+        const data = await response.json();
+        const blob = new Blob([data.content], { type: "text/markdown" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = data.filename;
+        a.click();
+      }
+    } catch (err) {
+      toast.error("Failed to download report");
+    }
+  };
+
   const streamCopilot = async (prompt: string) => {
     setSending(true);
     setCopilotMessages((current) => [...current, { role: "user", content: prompt }, { role: "assistant", content: "" }]);
@@ -297,7 +315,7 @@ export default function AnalyzePage() {
           onSelectLine={setSelectedLine}
           onAnalyze={analyze}
           onFix={fixContract}
-          onExport={() => exportPdf("audit-report")}
+          onExport={downloadReport}
           fixing={fixing}
         />
 
@@ -343,6 +361,10 @@ export default function AnalyzePage() {
                       Weighted contract exposure across exploitable flows, privilege surfaces, and arithmetic hygiene.
                     </div>
                   </div>
+                </div>
+
+                <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                  <BenchmarkingChart data={activeResult?.benchmarks} />
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-3">

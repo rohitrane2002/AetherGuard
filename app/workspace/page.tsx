@@ -6,6 +6,7 @@ import AppShell from "../components/AppShell";
 import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
+import RepoScanner from "../components/github/RepoScanner";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
@@ -178,6 +179,7 @@ export default function WorkspacePage() {
           title="Collaborate on audit intelligence with real team state."
           subtitle="Invite reviewers, keep shared reports visible, and give every protocol workspace a persistent operational memory."
         />
+        <RepoScanner />
 
         {!workspace ? (
           <Panel>Loading workspace...</Panel>
