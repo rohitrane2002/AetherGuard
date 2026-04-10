@@ -187,6 +187,16 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
                 raise
             return _fallback_usage(current_user)
 
+    def _safe_subscription(db: Session, current_user: User) -> Optional[Subscription]:
+        try:
+            return db.execute(
+                select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
+            ).scalar_one_or_none()
+        except Exception as exc:
+            if not _is_schema_drift_error(exc):
+                raise
+            return None
+
     def _safe_workspace_counts(db: Session, current_user: User) -> dict:
         try:
             return workspace_counts(db, current_user)
@@ -247,9 +257,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
     @router.get("/dashboard/summary", response_model=DashboardSummaryResponse)
     async def dashboard_summary(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         try:
-            subscription = db.execute(
-                select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
-            ).scalar_one_or_none()
+            subscription = _safe_subscription(db, current_user)
             usage = _safe_usage(db, current_user)
             recent_logs = db.execute(
                 select(AnalysisLog).where(AnalysisLog.user_id == current_user.id).order_by(AnalysisLog.id.desc()).limit(6)
@@ -288,9 +296,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     @router.get("/account", response_model=AccountResponse)
     async def read_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-        subscription = db.execute(
-            select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.id.desc())
-        ).scalar_one_or_none()
+        subscription = _safe_subscription(db, current_user)
         return AccountResponse(
             id=current_user.id,
             email=current_user.email,
