@@ -27,6 +27,8 @@ export type AnalysisResult = {
   autofix_preview: string;
   benchmarks?: any;
   report_url?: string;
+  issues: string[];
+  score: number;
 };
 
 export type CopilotMessage = {
