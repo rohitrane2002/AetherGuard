@@ -27,6 +27,7 @@ export type AnalysisResult = {
   summary: string;
   explanation?: string;
   poc_test?: string;
+  fix?: string;
   fix_suggestions: string[];
   autofix_preview: string;
   benchmarks?: any;
