@@ -118,9 +118,9 @@ async def register_user(request: Request, payload: UserRegisterRequest, db: Sess
         return _token_pair_response(user, db)
     except HTTPException:
         raise
-    except Exception:
+    except Exception as exc:
         logger.exception("Auth register failed for %s", payload.email)
-        raise
+        raise HTTPException(status_code=500, detail=f"AUTH_REGISTER_CRASH: {type(exc).__name__}: {exc}") from exc
 
 
 @router.post("/login", response_model=TokenPairResponse)
@@ -137,9 +137,9 @@ async def login_user(request: Request, payload: UserLoginRequest, db: Session = 
         return _token_pair_response(user, db)
     except HTTPException:
         raise
-    except Exception:
+    except Exception as exc:
         logger.exception("Auth login failed for %s", payload.email)
-        raise
+        raise HTTPException(status_code=500, detail=f"AUTH_LOGIN_CRASH: {type(exc).__name__}: {exc}") from exc
 
 
 @router.post("/refresh", response_model=TokenPairResponse)
@@ -151,9 +151,9 @@ async def refresh_tokens(request: Request, payload: RefreshTokenRequest, db: Ses
         return _token_pair_response(user, db)
     except HTTPException:
         raise
-    except Exception:
+    except Exception as exc:
         logger.exception("Refresh token exchange failed")
-        raise
+        raise HTTPException(status_code=500, detail=f"AUTH_REFRESH_CRASH: {type(exc).__name__}: {exc}") from exc
 
 
 @router.post("/logout")
@@ -290,9 +290,9 @@ async def google_oauth_callback(code: str, db: Session = Depends(get_db)):
 
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=502, detail=f"Google OAuth error: {exc.response.text}")
-    except Exception:
+    except Exception as exc:
         logger.exception("Google OAuth callback failed")
-        raise
+        raise HTTPException(status_code=500, detail=f"GOOGLE_OAUTH_CRASH: {type(exc).__name__}: {exc}") from exc
 
 
 # ─── GitHub OAuth ────────────────────────────────────────────────────
@@ -379,6 +379,6 @@ async def github_oauth_callback(code: str, db: Session = Depends(get_db)):
 
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=502, detail=f"GitHub OAuth error: {exc.response.text}")
-    except Exception:
+    except Exception as exc:
         logger.exception("GitHub OAuth callback failed")
-        raise
+        raise HTTPException(status_code=500, detail=f"GITHUB_OAUTH_CRASH: {type(exc).__name__}: {exc}") from exc
