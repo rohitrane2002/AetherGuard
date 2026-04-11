@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
+from database import ensure_runtime_schema_compatibility
 from routes import build_router
 
 
@@ -54,6 +55,7 @@ def build_analyzer() -> Analyzer:
 async def lifespan(app: FastAPI):
     global analyzer, analyzer_init_error
     try:
+        ensure_runtime_schema_compatibility()
         analyzer = build_analyzer()
         analyzer_init_error = None
     except Exception as exc:
