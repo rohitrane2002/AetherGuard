@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from typing import Optional
 
 import httpx
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
@@ -32,6 +33,7 @@ from services.workspace_service import ensure_personal_workspace, sync_pending_m
 from services.rate_limit_service import limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 
 def _is_schema_drift_error(exc: Exception) -> bool:
@@ -72,51 +74,86 @@ def _ensure_workspace_bootstrap(db: Session, user: User) -> None:
             raise
 
 
+def _token_pair_response(user: User, db: Session) -> TokenPairResponse:
+    access_token = create_access_token(user.email)
+    refresh_token = create_refresh_token(user, db)
+    created_at = getattr(user, "created_at", None)
+    if created_at is None:
+        from datetime import datetime, timezone
+
+        created_at = datetime.now(timezone.utc)
+
+    return TokenPairResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=UserResponse(
+            id=user.id,
+            email=user.email,
+            is_active=bool(getattr(user, "is_active", True)),
+            provider=getattr(user, "provider", "email") or "email",
+            avatar_url=getattr(user, "avatar_url", None),
+            created_at=created_at,
+        ),
+    )
+
+
 # ─── Email/Password Auth ─────────────────────────────────────────────
 
 @router.post("/register", response_model=TokenPairResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register_user(request: Request, payload: UserRegisterRequest, db: Session = Depends(get_db)):
-    existing_user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
-    if existing_user is not None:
-        raise HTTPException(status_code=409, detail="User already exists")
+    try:
+        existing_user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+        if existing_user is not None:
+            raise HTTPException(status_code=409, detail="User already exists")
 
-    user = User(email=payload.email, password_hash=hash_password(payload.password), is_active=True, provider="email")
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        user = User(email=payload.email, password_hash=hash_password(payload.password), is_active=True, provider="email")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
-    _ensure_free_subscription(db, user)
-    _ensure_workspace_bootstrap(db, user)
+        _ensure_free_subscription(db, user)
+        _ensure_workspace_bootstrap(db, user)
 
-    access_token = create_access_token(user.email)
-    refresh_token = create_refresh_token(user, db)
-    return TokenPairResponse(access_token=access_token, refresh_token=refresh_token, user=user)
+        return _token_pair_response(user, db)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Auth register failed for %s", payload.email)
+        raise
 
 
 @router.post("/login", response_model=TokenPairResponse)
 @limiter.limit("5/minute")
 async def login_user(request: Request, payload: UserLoginRequest, db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
-    if user is None or not user.password_hash or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Inactive user")
-    _ensure_workspace_bootstrap(db, user)
+    try:
+        user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+        if user is None or not user.password_hash or not verify_password(payload.password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="Inactive user")
+        _ensure_workspace_bootstrap(db, user)
 
-    access_token = create_access_token(user.email)
-    refresh_token = create_refresh_token(user, db)
-    return TokenPairResponse(access_token=access_token, refresh_token=refresh_token, user=user)
+        return _token_pair_response(user, db)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Auth login failed for %s", payload.email)
+        raise
 
 
 @router.post("/refresh", response_model=TokenPairResponse)
 @limiter.limit("10/minute")
 async def refresh_tokens(request: Request, payload: RefreshTokenRequest, db: Session = Depends(get_db)):
-    user = get_user_from_refresh_token(payload.refresh_token, db)
-    revoke_refresh_token(payload.refresh_token, db)
-    access_token = create_access_token(user.email)
-    refresh_token = create_refresh_token(user, db)
-    return TokenPairResponse(access_token=access_token, refresh_token=refresh_token, user=user)
+    try:
+        user = get_user_from_refresh_token(payload.refresh_token, db)
+        revoke_refresh_token(payload.refresh_token, db)
+        return _token_pair_response(user, db)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Refresh token exchange failed")
+        raise
 
 
 @router.post("/logout")
@@ -253,6 +290,9 @@ async def google_oauth_callback(code: str, db: Session = Depends(get_db)):
 
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=502, detail=f"Google OAuth error: {exc.response.text}")
+    except Exception:
+        logger.exception("Google OAuth callback failed")
+        raise
 
 
 # ─── GitHub OAuth ────────────────────────────────────────────────────
@@ -339,3 +379,6 @@ async def github_oauth_callback(code: str, db: Session = Depends(get_db)):
 
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=502, detail=f"GitHub OAuth error: {exc.response.text}")
+    except Exception:
+        logger.exception("GitHub OAuth callback failed")
+        raise
