@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from auth import (
@@ -33,6 +34,44 @@ from services.rate_limit_service import limiter
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _is_schema_drift_error(exc: Exception) -> bool:
+    if isinstance(exc, (OperationalError, ProgrammingError)):
+        return True
+    message = str(exc).lower()
+    markers = (
+        "does not exist",
+        "undefined table",
+        "undefined column",
+        "no such table",
+        "no such column",
+        "relation ",
+        "column ",
+    )
+    return any(marker in message for marker in markers)
+
+
+def _ensure_free_subscription(db: Session, user: User) -> None:
+    try:
+        existing = db.execute(select(Subscription).where(Subscription.user_id == user.id)).scalar_one_or_none()
+        if existing is None:
+            db.add(Subscription(user_id=user.id, plan="free", status="active"))
+            db.commit()
+    except Exception as exc:
+        db.rollback()
+        if not _is_schema_drift_error(exc):
+            raise
+
+
+def _ensure_workspace_bootstrap(db: Session, user: User) -> None:
+    try:
+        sync_pending_memberships_for_user(db, user)
+        ensure_personal_workspace(db, user)
+    except Exception as exc:
+        db.rollback()
+        if not _is_schema_drift_error(exc):
+            raise
+
+
 # ─── Email/Password Auth ─────────────────────────────────────────────
 
 @router.post("/register", response_model=TokenPairResponse, status_code=status.HTTP_201_CREATED)
@@ -47,11 +86,8 @@ async def register_user(request: Request, payload: UserRegisterRequest, db: Sess
     db.commit()
     db.refresh(user)
 
-    subscription = Subscription(user_id=user.id, plan="free", status="active")
-    db.add(subscription)
-    db.commit()
-    sync_pending_memberships_for_user(db, user)
-    ensure_personal_workspace(db, user)
+    _ensure_free_subscription(db, user)
+    _ensure_workspace_bootstrap(db, user)
 
     access_token = create_access_token(user.email)
     refresh_token = create_refresh_token(user, db)
@@ -66,7 +102,7 @@ async def login_user(request: Request, payload: UserLoginRequest, db: Session = 
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Inactive user")
-    sync_pending_memberships_for_user(db, user)
+    _ensure_workspace_bootstrap(db, user)
 
     access_token = create_access_token(user.email)
     refresh_token = create_refresh_token(user, db)
@@ -123,11 +159,8 @@ def _upsert_oauth_user(
         db.commit()
         db.refresh(user)
 
-        subscription = Subscription(user_id=user.id, plan="free", status="active")
-        db.add(subscription)
-        db.commit()
-        sync_pending_memberships_for_user(db, user)
-        ensure_personal_workspace(db, user)
+        _ensure_free_subscription(db, user)
+        _ensure_workspace_bootstrap(db, user)
     else:
         # Update existing user with latest OAuth data
         if avatar_url:
@@ -139,6 +172,7 @@ def _upsert_oauth_user(
         if user.provider == "email":
             user.provider = provider
         db.commit()
+        _ensure_workspace_bootstrap(db, user)
 
     return user
 
