@@ -11,6 +11,7 @@ import ScanSection from "./components/ScanSection";
 import ScrollStory from "./components/ScrollStory";
 import ThreatIntelligence from "./components/ThreatIntelligence";
 import WorkflowSteps from "./components/WorkflowSteps";
+import Footer from "./components/Footer";
 
 type DeviceTier = "mobile" | "tablet" | "desktop";
 const EASING = [0.22, 1, 0.36, 1];
@@ -89,14 +90,19 @@ export default function Home() {
               <h1 className="text-[15px] font-semibold tracking-tight text-white">AetherGuard</h1>
             </div>
           </div>
-          <div className="hidden items-center gap-4 sm:flex">
+          <div className="hidden items-center gap-6 sm:flex">
+            <Link href="/audit" className="text-[13px] font-medium text-zinc-400 transition hover:text-white">
+              Encyclopedia
+            </Link>
+            <Link href="/tools" className="text-[13px] font-medium text-zinc-400 transition hover:text-white">
+              Security Tools
+            </Link>
             <Link href="/pricing" className="text-[13px] font-medium text-zinc-400 transition hover:text-white">
               Pricing
             </Link>
             <Link href="/dashboard" className="text-[13px] font-medium text-zinc-400 transition hover:text-white">
               Docs
             </Link>
-            {/* Fixed nested button */}
             <Link
               href="/auth"
               className="rounded-md bg-white px-4 py-2 text-[13px] font-semibold text-black transition hover:bg-zinc-200"
@@ -163,6 +169,35 @@ export default function Home() {
           <ThreatIntelligence deviceTier={deviceTier} />
         </div>
 
+        {/* ── 4. pSEO Hubs (NEW) ── */}
+        <section className="mx-auto mt-20 border-t border-white/5 py-20">
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="group relative overflow-hidden rounded-[24px] border border-white/5 bg-white/[0.02] p-8 transition hover:bg-white/[0.04]">
+              <div className="relative z-10">
+                <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">Free Resource</span>
+                <h3 className="mt-4 text-2xl font-semibold text-white">Vulnerability Encyclopedia</h3>
+                <p className="mt-3 text-zinc-400">Deep-dives into 80+ smart contract vulnerabilities with code examples, severity analysis, and fix strategies.</p>
+                <Link href="/audit" className="mt-6 inline-flex items-center text-sm font-medium text-white hover:underline">
+                  Browse Encyclopedia →
+                </Link>
+              </div>
+              <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-emerald-500/10 blur-[60px] transition group-hover:bg-emerald-500/20" />
+            </div>
+
+            <div className="group relative overflow-hidden rounded-[24px] border border-white/5 bg-white/[0.02] p-8 transition hover:bg-white/[0.04]">
+              <div className="relative z-10">
+                <span className="text-xs font-bold uppercase tracking-widest text-blue-500">Security Suite</span>
+                <h3 className="mt-4 text-2xl font-semibold text-white">Advanced Security Tools</h3>
+                <p className="mt-3 text-zinc-400">Professional-grade tools for gas optimization, ABI decoding, multi-sig auditing, and transaction simulation.</p>
+                <Link href="/tools" className="mt-6 inline-flex items-center text-sm font-medium text-white hover:underline">
+                  Access Free Tools →
+                </Link>
+              </div>
+              <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-[60px] transition group-hover:bg-blue-500/20" />
+            </div>
+          </div>
+        </section>
+
         {/* ── Fallback ── */}
         <MobileOptimized />
 
@@ -199,6 +234,7 @@ export default function Home() {
           </div>
         </motion.section>
       </div>
+      <Footer />
     </main>
   );
 }

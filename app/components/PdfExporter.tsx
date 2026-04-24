@@ -1,45 +1,85 @@
 "use client";
+
+import toast from "react-hot-toast";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 /**
- * Export any element as a PDF.
- * Handles Tailwind gradient colours by sanitising them for html2canvas.
+ * Export any element as a PDF with enterprise-grade reliability.
  */
 export async function exportPdf(elementId: string) {
+  console.log("[PdfExporter] Triggered for ID:", elementId);
   const element = document.getElementById(elementId);
-  if (!element) return;
+  
+  if (!element) {
+    console.error("[PdfExporter] Element not found:", elementId);
+    toast.error("Dashboard context not detected. Run a security scan first.");
+    return;
+  }
 
-  const sanitized = element.cloneNode(true) as HTMLElement;
-  sanitized.querySelectorAll("*").forEach((el: any) => {
-    // html2canvas can't do modern color() or oklab();
-    const style = window.getComputedStyle(el);
-    const bg = style.backgroundImage || "";
-    if (bg.includes("oklab") || bg.includes("color(")) {
-      (el.style as any).backgroundImage = "none";
+  // Check if it has content (to avoid hanging on empty divs)
+  if (!element.textContent?.trim() && element.children.length === 0) {
+     toast.error("Report intelligence is still being synthesized. Wait a moment.");
+     return;
+  }
+
+  const tid = toast.loading("Synthesizing AetherGuard Security Certificate...");
+
+  try {
+    // Ensure the element is visible for capture
+    const originalStyle = element.style.cssText;
+    
+    const canvas = await html2canvas(element, {
+      backgroundColor: "#020617",
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: false, // Prevents tainted canvas errors from external assets
+      onclone: (clonedDoc) => {
+        const clonedElement = clonedDoc.getElementById(elementId);
+        if (clonedElement) {
+          clonedElement.style.opacity = "1";
+          clonedElement.style.visibility = "visible";
+          clonedElement.style.position = "static";
+          clonedElement.style.display = "block";
+        }
+      }
+    });
+
+    const imgData = canvas.toDataURL("image/png", 1.0);
+    const pdf = new jsPDF({
+      orientation: "p",
+      unit: "mm",
+      format: "a4"
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    
+    // Calculate how many pages we need
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // Add first page
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+    heightLeft -= pageHeight;
+
+    // Add subsequent pages if needed
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
+      heightLeft -= pageHeight;
     }
-    if (style.backgroundColor.includes("oklab")) {
-      (el.style as any).backgroundColor = "#111827";
-    }
-  });
+    
+    pdf.save(`AETHER_AUDIT_${new Date().getTime()}.pdf`);
 
-  const canvas = await html2canvas(sanitized, {
-    backgroundColor: "#0d1117",
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
-    onclone: (doc) => {
-      // Hide neon background before screenshot so it's dark but not noisy
-      const bg = doc.querySelector(".absolute.inset-0");
-      if (bg) (bg as HTMLElement).style.display = "none";
-    },
-  });
+    toast.success("Enterprise security certificate generated.", { id: tid });
 
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF("p", "mm", "a4");
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const imgWidth = pageWidth - 20;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight, undefined, "FAST");
-  pdf.save("aetherguard_report.pdf");
+  } catch (err) {
+    console.error("[PdfExporter] Critical failure:", err);
+    toast.error("Audit synthesis failed. Use the 'Copy Fix' instead for now.", { id: tid });
+  }
 }

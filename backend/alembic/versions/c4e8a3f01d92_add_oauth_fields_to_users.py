@@ -19,19 +19,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Make password_hash nullable (for OAuth-only users)
-    op.alter_column('users', 'password_hash', existing_type=sa.Text(), nullable=True)
+    # Use batch_alter_table for SQLite compatibility
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        # Make password_hash nullable (for OAuth-only users)
+        batch_op.alter_column('password_hash', existing_type=sa.Text(), nullable=True)
+        # Add OAuth fields
+        batch_op.add_column(sa.Column('provider', sa.Text(), nullable=False, server_default='email'))
+        batch_op.add_column(sa.Column('avatar_url', sa.Text(), nullable=True))
+        batch_op.add_column(sa.Column('github_username', sa.Text(), nullable=True))
+        batch_op.add_column(sa.Column('github_access_token', sa.Text(), nullable=True))
 
-    # Add OAuth fields
-    op.add_column('users', sa.Column('provider', sa.Text(), nullable=False, server_default='email'))
-    op.add_column('users', sa.Column('avatar_url', sa.Text(), nullable=True))
-    op.add_column('users', sa.Column('github_username', sa.Text(), nullable=True))
-    op.add_column('users', sa.Column('github_access_token', sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('users', 'github_access_token')
-    op.drop_column('users', 'github_username')
-    op.drop_column('users', 'avatar_url')
-    op.drop_column('users', 'provider')
-    op.alter_column('users', 'password_hash', existing_type=sa.Text(), nullable=False)
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.drop_column('github_access_token')
+        batch_op.drop_column('github_username')
+        batch_op.drop_column('avatar_url')
+        batch_op.drop_column('provider')
+        batch_op.alter_column('password_hash', existing_type=sa.Text(), nullable=False)

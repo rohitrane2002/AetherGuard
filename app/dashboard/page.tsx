@@ -167,7 +167,6 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-[1520px] space-y-8 pt-3 md:pt-5">
         <SectionHeading
           eyebrow="Command Center"
@@ -214,11 +213,16 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <StatCard label="Active Plan" value={summary.account.plan} helper={summary.account.status} />
+                  <StatCard 
+                    label="Active Plan" 
+                    value={summary.account.plan} 
+                    helper={summary.account.plan === "founder" ? "Institutional Direct Access" : summary.account.status} 
+                    accent={summary.account.plan === "founder" ? "rose" : "cyan"}
+                  />
                   <StatCard
                     label="Usage Today"
-                    value={`${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
-                    helper={`${summary.usage.remaining_today} scans remaining`}
+                    value={summary.usage.plan === "founder" ? "∞ / ∞" : `${summary.usage.analyses_today}/${summary.usage.daily_limit}`}
+                    helper={summary.usage.plan === "founder" ? "Founder context: Unlimited scans" : `${summary.usage.remaining_today} scans remaining`}
                     accent="violet"
                   />
                   <StatCard
@@ -234,6 +238,7 @@ export default function DashboardPage() {
                     accent="emerald"
                   />
                 </div>
+
 
                 <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
                   <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
@@ -281,30 +286,44 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-5 lg:grid-cols-[1.08fr_0.92fr_0.92fr]">
-                  <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
-                    Control matrix
-                  </div>
-                  <div className="lg:col-span-3 grid gap-4 lg:grid-cols-3">
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-                      <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">Team mode</p>
-                      <p className="mt-3 text-lg font-semibold text-white">{summary.workspace.members} active members</p>
-                      <p className="mt-2 text-sm text-slate-400">Role posture: {summary.workspace.role}</p>
+                <div className="grid gap-4 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-5 lg:grid-cols-[1fr_2fr]">
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
+                      Risk Distribution
                     </div>
+                    <div className="mt-6 flex h-6 overflow-hidden rounded-full bg-slate-900 shadow-inner">
+                      <div className="h-full bg-rose-500 transition-all" style={{ width: `${(summary.recent_scans.filter(s => s.risk_score >= 70).length / (summary.recent_scans.length || 1)) * 100}%` }} />
+                      <div className="h-full bg-amber-400 transition-all" style={{ width: `${(summary.recent_scans.filter(s => s.risk_score >= 40 && s.risk_score < 70).length / (summary.recent_scans.length || 1)) * 100}%` }} />
+                      <div className="h-full bg-emerald-500 transition-all" style={{ width: `${(summary.recent_scans.filter(s => s.risk_score < 40).length / (summary.recent_scans.length || 1)) * 100}%` }} />
+                    </div>
+                    <div className="flex flex-wrap gap-4 pt-2">
+                       <div className="flex items-center gap-2 text-sm text-slate-300">
+                         <span className="h-2 w-2 rounded-full bg-rose-500" /> Critical
+                       </div>
+                       <div className="flex items-center gap-2 text-sm text-slate-300">
+                         <span className="h-2 w-2 rounded-full bg-amber-400" /> Elevated
+                       </div>
+                       <div className="flex items-center gap-2 text-sm text-slate-300">
+                         <span className="h-2 w-2 rounded-full bg-emerald-500" /> Stable
+                       </div>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 lg:grid-cols-2">
                     <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
                       <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">Shared reporting</p>
-                      <p className="mt-3 text-lg font-semibold text-white">{summary.workspace.shared_reports} reports live</p>
-                      <p className="mt-2 text-sm text-slate-400">Shared audit visibility across the workspace.</p>
+                      <p className="mt-1 text-lg font-semibold text-white">{summary.workspace.shared_reports} reports live</p>
+                      <p className="mt-1 text-xs text-slate-400">Team visibility for all protocol audits.</p>
                     </div>
                     <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
                       <p className="text-[11px] uppercase tracking-[0.26em] text-slate-500">Unread intelligence</p>
-                      <p className="mt-3 text-lg font-semibold text-white">
-                        {summary.workspace.notification_metrics?.critical ?? 0} critical / {summary.workspace.notification_metrics?.unread ?? summary.notifications.length} unread
+                      <p className="mt-1 text-lg font-semibold text-white">
+                        {summary.workspace.notification_metrics?.unread ?? summary.notifications.length} alerts
                       </p>
-                      <p className="mt-2 text-sm text-slate-400">Operator feed ready for triage and follow-up.</p>
+                      <p className="mt-1 text-xs text-slate-400">Operator feed ready for triage.</p>
                     </div>
                   </div>
                 </div>
+
               </div>
             </Panel>
 

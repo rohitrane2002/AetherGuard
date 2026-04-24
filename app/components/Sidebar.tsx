@@ -7,10 +7,12 @@ import {
   Bars3Icon,
   BellAlertIcon,
   ChartBarSquareIcon,
+  CodeBracketSquareIcon,
   CreditCardIcon,
   HomeModernIcon,
   KeyIcon,
   RectangleGroupIcon,
+  RocketLaunchIcon,
   ShieldCheckIcon,
   SparklesIcon,
   UserGroupIcon,
@@ -27,6 +29,7 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const email = getAuthEmail();
 
   useEffect(() => {
@@ -39,6 +42,7 @@ export default function Sidebar() {
       if (accountRes.ok) {
         const account = await accountRes.json();
         setPlan(account.subscription_plan ?? null);
+        setIsAdmin(account.is_admin || false);
       }
       if (usageRes.ok) {
         const usage = await usageRes.json();
@@ -49,18 +53,27 @@ export default function Sidebar() {
   }, [email]);
 
   const links = useMemo(
-    () => [
-      { href: "/", label: "Overview", icon: HomeModernIcon },
-      { href: "/dashboard", label: "Command Center", icon: RectangleGroupIcon },
-      { href: "/analyze", label: "AI Workspace", icon: SparklesIcon },
-      { href: "/workspace", label: "Team Workspace", icon: UserGroupIcon },
-      { href: "/notifications", label: "Alerts", icon: BellAlertIcon },
-      { href: "/reports", label: "Audit Reports", icon: ChartBarSquareIcon },
-      { href: "/pricing", label: "Plans", icon: CreditCardIcon },
-      { href: "/account", label: "Account", icon: UserCircleIcon },
-      { href: `${API_BASE_URL}/docs`, label: "API Docs", icon: KeyIcon, external: true },
-    ],
-    []
+    () => {
+      const base = [
+        { href: "/", label: "Overview", icon: HomeModernIcon },
+        { href: "/dashboard", label: "Command Center", icon: RectangleGroupIcon },
+        { href: "/analyze", label: "AI Workspace", icon: SparklesIcon },
+        { href: "/repos", label: "GitHub Scanner", icon: CodeBracketSquareIcon },
+        { href: "/workspace", label: "Team Workspace", icon: UserGroupIcon },
+        { href: "/notifications", label: "Alerts", icon: BellAlertIcon },
+        { href: "/reports", label: "Audit Reports", icon: ChartBarSquareIcon },
+        { href: "/pricing", label: "Plans", icon: CreditCardIcon },
+        { href: "/account", label: "Account", icon: UserCircleIcon },
+        { href: `${API_BASE_URL}/docs`, label: "API Docs", icon: KeyIcon, external: true },
+      ];
+
+      if (isAdmin) {
+        base.splice(1, 0, { href: "/admin/growth", label: "Growth Hub", icon: RocketLaunchIcon });
+      }
+
+      return base;
+    },
+    [isAdmin]
   );
 
   return (
@@ -161,6 +174,9 @@ export default function Sidebar() {
               <div className="mt-3 grid gap-2">
                 <Link href="/analyze" className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-200 transition hover:border-cyan-400/30 hover:text-white">
                   Run live scan
+                </Link>
+                <Link href="/repos" className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/30 hover:text-white">
+                  GitHub Scanner
                 </Link>
                 <Link href="/workspace" className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-200 transition hover:border-violet-400/30 hover:text-white">
                   Open team workspace

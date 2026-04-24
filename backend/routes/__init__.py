@@ -30,6 +30,7 @@ from database import get_db
 from models import AnalysisLog, SharedReport, Subscription, TeamMembership, User
 from routes.auth_routes import router as auth_router
 from routes.growth import router as growth_router
+from routes.github_routes import router as github_router
 from schemas import (
     AccountResponse,
     ApiKeyCreateRequest,
@@ -103,6 +104,7 @@ from services.workspace_service import (
 def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
     router = APIRouter()
     router.include_router(auth_router)
+    router.include_router(github_router)
 
     def preview_analysis(analyzer, source: str) -> dict:
         result = analyzer.predict(source)

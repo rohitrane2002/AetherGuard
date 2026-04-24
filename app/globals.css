@@ -137,35 +137,44 @@ body {
   background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.4), transparent);
 }
 
+@keyframes linePulse {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
 .ag-line-critical {
-  background: linear-gradient(90deg, rgba(244, 63, 94, 0.18), rgba(244, 63, 94, 0.02)) !important;
-  box-shadow: inset 3px 0 0 rgba(251, 113, 133, 0.8);
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.22), rgba(244, 63, 94, 0.04)) !important;
+  box-shadow: inset 4px 0 0 #fb7185, 0 0 20px rgba(244, 63, 94, 0.15);
+  animation: linePulse 2s ease-in-out infinite;
 }
 
 .ag-line-high {
-  background: linear-gradient(90deg, rgba(251, 191, 36, 0.16), rgba(251, 191, 36, 0.02)) !important;
-  box-shadow: inset 3px 0 0 rgba(251, 191, 36, 0.75);
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.18), rgba(251, 191, 36, 0.04)) !important;
+  box-shadow: inset 4px 0 0 #fbbf24, 0 0 20px rgba(251, 191, 36, 0.12);
+  animation: linePulse 2.5s ease-in-out infinite;
 }
 
 .ag-line-medium {
-  background: linear-gradient(90deg, rgba(34, 211, 238, 0.16), rgba(34, 211, 238, 0.02)) !important;
-  box-shadow: inset 3px 0 0 rgba(34, 211, 238, 0.75);
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.18), rgba(34, 211, 238, 0.04)) !important;
+  box-shadow: inset 4px 0 0 #22d3ee, 0 0 20px rgba(34, 211, 238, 0.12);
 }
 
 .ag-line-low {
-  background: linear-gradient(90deg, rgba(74, 222, 128, 0.14), rgba(74, 222, 128, 0.02)) !important;
-  box-shadow: inset 3px 0 0 rgba(74, 222, 128, 0.75);
+  background: linear-gradient(90deg, rgba(74, 222, 128, 0.16), rgba(74, 222, 128, 0.04)) !important;
+  box-shadow: inset 4px 0 0 #4ade80;
 }
 
 .ag-line-change {
-  background: linear-gradient(90deg, rgba(96, 165, 250, 0.14), rgba(96, 165, 250, 0.02)) !important;
-  box-shadow: inset 3px 0 0 rgba(96, 165, 250, 0.75);
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.16), rgba(96, 165, 250, 0.04)) !important;
+  box-shadow: inset 4px 0 0 #60a5fa;
 }
 
 .ag-line-selected {
-  outline: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 4px 0 0 white, 0 0 15px rgba(255, 255, 255, 0.1);
 }
+
 
 .ag-glyph-critical,
 .ag-glyph-high,

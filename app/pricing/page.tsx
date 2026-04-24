@@ -7,13 +7,10 @@ import {
   CheckBadgeIcon,
   SparklesIcon,
 } from "@heroicons/react/24/solid";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import AppShell from "../components/AppShell";
 import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
-import { authFetch, getAuthToken, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
+import { getAuthToken, redirectToAuth } from "../lib/auth";
 
 const plans = [
   {
@@ -53,39 +50,59 @@ type Account = {
 
 export default function PricingPage() {
   const [account, setAccount] = useState<Account | null>(null);
+  const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       const token = getAuthToken();
       if (!token) return;
-      const response = await authFetch(`${API_BASE_URL}/account`);
-      if (!response.ok) return;
-      setAccount(await response.json());
+      try {
+        const res = await fetch("/api/account", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setAccount(await res.json());
+      } catch { /* ignore on load */ }
     };
     load();
   }, []);
 
   const startCheckout = async (priceId: string) => {
-    const response = await authFetch(`${API_BASE_URL}/create-checkout-session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ price_id: priceId }),
-    });
-    if (isUnauthorizedStatus(response.status)) {
-      redirectToAuth(true);
-      return;
+    setLoadingPriceId(priceId);
+    try {
+      const token = getAuthToken()?.trim();
+      const res = await fetch(`/api/proxy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ price_id: priceId }),
+      });
+
+      if (res.status === 401) {
+        redirectToAuth(true);
+        return;
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.detail || "Checkout failed");
+        return;
+      }
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      toast.success(data.plan === "free" ? "Plan reverted to Free" : "Plan upgraded successfully!");
+      setAccount((prev) => prev ? { ...prev, subscription_plan: data.plan, subscription_status: "active" } : null);
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      toast.error(err?.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoadingPriceId(null);
     }
-    const data = await response.json();
-    if (!response.ok) {
-      toast.error(data.detail || "Checkout failed");
-      return;
-    }
-    if (data.checkoutUrl) {
-      window.location.href = data.checkoutUrl;
-      return;
-    }
-    toast.success("Checkout session created");
   };
+
 
   const metrics = useMemo(
     () => [
@@ -99,7 +116,6 @@ export default function PricingPage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-7xl space-y-8">
         <SectionHeading
           eyebrow="Monetization"
@@ -181,8 +197,13 @@ export default function PricingPage() {
                   ))}
                 </div>
 
-                <Button className="mt-6 w-full" tone={current ? "ghost" : "primary"} onClick={() => startCheckout(plan.priceId)}>
-                  {current ? `Stay on ${plan.name}` : `Choose ${plan.name}`}
+                <Button 
+                  className="mt-6 w-full" 
+                  tone={current ? "ghost" : "primary"} 
+                  onClick={() => startCheckout(plan.priceId)}
+                  disabled={loadingPriceId !== null}
+                >
+                  {loadingPriceId === plan.priceId ? "Processing..." : (current ? `Stay on ${plan.name}` : `Choose ${plan.name}`)}
                 </Button>
               </Panel>
             );

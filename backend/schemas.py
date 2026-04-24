@@ -25,6 +25,7 @@ class UserResponse(BaseModel):
     is_active: bool
     provider: Optional[str] = "email"
     avatar_url: Optional[str] = None
+    github_username: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

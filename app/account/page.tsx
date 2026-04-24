@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   CheckBadgeIcon,
   CreditCardIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/solid";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import AppShell from "../components/AppShell";
 import { Button, Panel, SectionHeading, StatCard } from "../components/ui";
 import { authFetch, clearAuthSession, isUnauthorizedStatus, redirectToAuth } from "../lib/auth";
@@ -16,7 +17,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
 
 type Account = {
-  id: number;
+  id: string;
   email: string;
   is_active: boolean;
   subscription_plan: string;
@@ -32,11 +33,23 @@ type Usage = {
   remaining_today: number;
 };
 
-export default function AccountPage() {
+function AccountPageContent() {
   const { ready } = useProtectedRoute();
+  const searchParams = useSearchParams();
   const [account, setAccount] = useState<Account | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      toast.success("Subscription upgraded! Welcome to Pro.", {
+        icon: "🚀",
+        duration: 6000,
+      });
+      // Replace URL to clean state
+      window.history.replaceState({}, "", "/account");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const load = async () => {
@@ -95,7 +108,6 @@ export default function AccountPage() {
 
   return (
     <AppShell>
-      <Toaster position="top-right" />
       <div className="mx-auto max-w-6xl space-y-6">
         <SectionHeading
           eyebrow="Account Center"
@@ -106,9 +118,9 @@ export default function AccountPage() {
         {account ? (
           <>
             <div className="grid gap-4 md:grid-cols-4">
-              <StatCard label="Account" value={account.email} helper={`User #${account.id}`} />
+              <StatCard label="Account" value={account.email} helper={`User identity active`} />
               <StatCard label="Plan" value={account.subscription_plan} helper={account.subscription_status} accent="violet" />
-              <StatCard label="Access" value={account.is_active ? "Active" : "Inactive"} helper={account.stripe_customer_id || "No Stripe customer"} accent="emerald" />
+              <StatCard label="Access" value={account.is_active ? "Active" : "Inactive"} helper={account.stripe_customer_id || "No billing profile"} accent="emerald" />
               <StatCard label="Usage" value={usage ? `${usage.analyses_today}/${usage.daily_limit}` : "--"} helper={usage ? `${usage.remaining_today} scans left today` : "Loading"} accent="amber" />
             </div>
 
@@ -188,5 +200,13 @@ export default function AccountPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={null}>
+      <AccountPageContent />
+    </Suspense>
   );
 }

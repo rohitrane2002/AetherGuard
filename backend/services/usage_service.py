@@ -75,6 +75,7 @@ def increment_usage(db: Session, user: User) -> dict:
     db.add(row)
     db.commit()
     db.refresh(row)
+    db.add(user) # Re-attach user to session if it was detached
     db.refresh(user)
     return get_user_usage(db, user)
 

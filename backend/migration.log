@@ -1,0 +1,10 @@
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade f37bf282bacf -> c4e8a3f01d92, add oauth fields to users table
+INFO  [alembic.runtime.migration] Running upgrade f37bf282bacf -> c4e8a3f01d92, add oauth fields to users table
+ALEMBIC CONNECTING TO: sqlite:////Users/roh***
+ONLINE MIGRATION ERROR: (sqlite3.OperationalError) near "ALTER": syntax error
+[SQL: ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
