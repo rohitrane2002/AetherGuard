@@ -54,9 +54,10 @@ function GitHubIcon() {
 
 export default function AuthPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "verify">("login");
   const [email, setEmail] = useState("founder@aetherguard.dev");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [slowRequest, setSlowRequest] = useState(false);
   const [nextPath, setNextPath] = useState<string | null>(null);
@@ -122,9 +123,21 @@ export default function AuthPage() {
         }
       }
       if (!response.ok) {
+        if (data["detail"] === "EMAIL_NOT_VERIFIED") {
+          toast.success("Please verify your email");
+          setMode("verify");
+          return;
+        }
         toast.error(typeof data["detail"] === "string" ? data["detail"] as string : "Authentication failed");
         return;
       }
+      
+      if (mode === "register") {
+        setMode("verify");
+        toast.success("Account created! Check your email for verification code.");
+        return;
+      }
+
       const authData = data as unknown as AuthSuccessPayload;
       storeAuthSession(authData.access_token, authData.refresh_token, authData.user.email);
       await warmBackend();
@@ -137,6 +150,44 @@ export default function AuthPage() {
       window.clearTimeout(slowRequestTimer);
       setSlowRequest(false);
       setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      setLoading(true);
+      const resp = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: otp }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        toast.error(data.detail || "Verification failed");
+        return;
+      }
+      toast.success("Email verified! You can now login.");
+      setMode("login");
+    } catch (error) {
+      toast.error("Verification failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      toast.loading("Sending new code...", { id: "resend-otp" });
+      const resp = await fetch(`${API_BASE_URL}/auth/resend-otp?email=${encodeURIComponent(email)}`, {
+        method: "POST",
+      });
+      if (resp.ok) {
+        toast.success("New code sent!", { id: "resend-otp" });
+      } else {
+        toast.error("Failed to resend code", { id: "resend-otp" });
+      }
+    } catch (error) {
+      toast.error("Failed to resend code", { id: "resend-otp" });
     }
   };
 
@@ -285,42 +336,79 @@ export default function AuthPage() {
 
           {/* ── Email/Password Form ──────────────────────────── */}
           <div className="space-y-4">
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-[22px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none focus:border-cyan-400/40 transition"
-              placeholder="Email"
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-[22px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none focus:border-cyan-400/40 transition"
-              placeholder="Password"
-            />
-            <Button
-              onClick={submit}
-              disabled={loading}
-              className="w-full"
-              onMouseEnter={() => {
-                if (!isBackendWarm()) void warmBackend();
-              }}
-              onFocus={() => {
-                if (!isBackendWarm()) void warmBackend();
-              }}
-            >
-              {loading
-                ? slowRequest
-                  ? "Waking backend..."
-                  : "Processing..."
-                : mode === "login"
-                  ? `Enter ${destinationLabel}`
-                  : "Create workspace"}
-            </Button>
-            <Button tone="ghost" onClick={() => setMode(mode === "login" ? "register" : "login")} className="w-full">
-              {mode === "login" ? "Need an account? Register" : "Already have an account? Login"}
-            </Button>
+            {mode === "verify" ? (
+              <>
+                <p className="text-sm text-slate-300">We've sent a 6-digit code to <span className="font-semibold text-white">{email}</span></p>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
+                  className="w-full text-center text-2xl tracking-[0.5em] rounded-[22px] border border-white/10 bg-slate-950/80 px-4 py-4 text-white outline-none focus:border-cyan-400/40 transition"
+                  placeholder="000000"
+                />
+                <Button
+                  onClick={handleVerifyOtp}
+                  disabled={loading || otp.length !== 6}
+                  className="w-full"
+                >
+                  {loading ? "Verifying..." : "Verify Code"}
+                </Button>
+                <div className="flex justify-between items-center px-2">
+                  <button 
+                    onClick={handleResendOtp}
+                    className="text-xs text-cyan-300 hover:text-cyan-200"
+                  >
+                    Resend code
+                  </button>
+                  <button 
+                    onClick={() => setMode("login")}
+                    className="text-xs text-slate-500 hover:text-slate-400"
+                  >
+                    Back to login
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="w-full rounded-[22px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none focus:border-cyan-400/40 transition"
+                  placeholder="Email"
+                />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-[22px] border border-white/10 bg-slate-950/80 px-4 py-4 text-sm text-white outline-none focus:border-cyan-400/40 transition"
+                  placeholder="Password"
+                />
+                <Button
+                  onClick={submit}
+                  disabled={loading}
+                  className="w-full"
+                  onMouseEnter={() => {
+                    if (!isBackendWarm()) void warmBackend();
+                  }}
+                  onFocus={() => {
+                    if (!isBackendWarm()) void warmBackend();
+                  }}
+                >
+                  {loading
+                    ? slowRequest
+                      ? "Waking backend..."
+                      : "Processing..."
+                    : mode === "login"
+                      ? `Enter ${destinationLabel}`
+                      : "Create workspace"}
+                </Button>
+                <Button tone="ghost" onClick={() => setMode(mode === "login" ? "register" : "login")} className="w-full">
+                  {mode === "login" ? "Need an account? Register" : "Already have an account? Login"}
+                </Button>
+              </>
+            )}
           </div>
         </Panel>
       </div>

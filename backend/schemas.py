@@ -26,9 +26,15 @@ class UserResponse(BaseModel):
     provider: Optional[str] = "email"
     avatar_url: Optional[str] = None
     github_username: Optional[str] = None
+    is_email_verified: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OtpVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6)
 
 
 class TokenPairResponse(BaseModel):
@@ -238,6 +244,11 @@ class ApiKeyResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GuestStatsResponse(BaseModel):
+    total_scanned: int
+    remaining_guest_scans: int
 
 
 class HealthResponse(BaseModel):

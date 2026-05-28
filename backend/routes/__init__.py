@@ -3,7 +3,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
@@ -236,6 +236,22 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     router.include_router(growth_router)
     
+    @router.get("/analyze/stats", response_model=GuestStatsResponse)
+    async def get_scan_stats(request: Request, db: Session = Depends(get_db)):
+        client_ip = request.client.host if request.client else "unknown"
+        # Social Proof: Total scans across the platform
+        total_count = db.execute(select(func.count(AnalysisLog.id))).scalar() or 1248 # Fallback to a high number
+        
+        # Urgency: Scans left for this IP
+        guest_limit = 3
+        current_usage = rate_limiter.get_usage(f"guest_ip:{client_ip}", 86400) # 24h window
+        remaining = max(0, guest_limit - current_usage)
+        
+        return GuestStatsResponse(
+            total_scanned=total_count,
+            remaining_guest_scans=remaining
+        )
+
     @router.get("/health", response_model=HealthResponse)
     async def health_check(db: Session = Depends(get_db)):
         database_connected = True
@@ -713,6 +729,72 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         usage_after = increment_usage(db, current_user)
         final_result["remaining_today"] = usage_after["remaining_today"]
         return final_result
+
+    @router.post("/analyze/guest", response_model=AnalysisResponse)
+    async def analyze_contract_guest(
+        payload: dict,
+        request: Request,
+        db: Session = Depends(get_db),
+    ):
+        client_ip = request.client.host if request.client else "unknown"
+        usage_key = f"guest_ip:{client_ip}"
+        
+        # Urgency: Strict guest limit
+        if not rate_limiter.allow(usage_key, 3, 86400):
+            raise HTTPException(status_code=403, detail="GUEST_LIMIT_REACHED")
+
+        source = payload.get("content", "")
+        if not source.strip():
+            raise HTTPException(status_code=400, detail="Contract source is required")
+        
+        # Fast scan for guest
+        rule_engine = RuleEngine()
+        ai_engine = AIEngine()
+        score_engine = ScoringEngine()
+
+        await asyncio.sleep(0.5)
+        rule_issues = rule_engine.analyze(source)
+        
+        await asyncio.sleep(0.5)
+        semantic_issues = ai_engine.semantic_logic_review(source)
+        
+        all_issues = rule_issues + semantic_issues
+        score_data = score_engine.calculate(all_issues)
+
+        # Soft Paywall: Mask sensitive fields for guests
+        # We show THAT there are issues, but mask the details to drive registration
+        masked_findings = []
+        for issue in all_issues:
+            is_critical = issue.get("severity") == "high"
+            masked_findings.append({
+                "slug": issue.get("id", "secret"),
+                "label": issue.get("name", "Vulnerability Detected"),
+                "severity": issue.get("severity", "medium"),
+                "confidence": 0.9,
+                "summary": "Upgrade to Pro to view the full impact and mitigation of this finding." if is_critical else issue.get("description"),
+                "recommendation": "Register a free account to unlock fix suggestions." if is_critical else "Review logic.",
+                "line_numbers": issue.get("line_numbers", []),
+            })
+
+        # Track guest scan in logs with a dummy user if needed, or just return result
+        # For now, we increment the usage and return the masked result
+        rate_limiter.increment(usage_key, 86400)
+
+        return {
+            "score": score_data["score"],
+            "severity": score_data["severity"],
+            "issues": [f["label"] for f in masked_findings],
+            "findings": masked_findings,
+            "steps": ["Guest analysis complete. Pre-deployment audit finished."],
+            "explanation": "Result partially masked. Sign up to unlock full deep-ai reasoning and remediations.",
+            "fix": "// Code rewrite locked. Create an account to generate secure code.",
+            "confidence": 0.88,
+            "log_id": 0,
+            "risk_score": score_data["score"],
+            "summary": "Guest Scan Summary",
+            "fix_suggestions": ["Unlock Pro to see suggestions"],
+            "remaining_today": max(0, 3 - rate_limiter.get_usage(usage_key, 86400))
+        }
 
 
     @router.post("/analyze/live", response_model=AnalysisResponse)

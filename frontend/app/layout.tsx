@@ -1,9 +1,75 @@
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
+import StructuredData from "./components/SEO/StructuredData";
 
 export const metadata = {
-  title: "AetherGuard | AI Smart Contract Security Copilot",
-  description: "Premium AI workspace for Solidity security reviews, live contract feedback, and audit automation.",
+  metadataBase: new URL("https://aetherguard.vercel.app"),
+  title: {
+    default: "AetherGuard | AI Smart Contract Security Copilot",
+    template: "%s | AetherGuard",
+  },
+  description: "Advanced AI-powered smart contract security audits. Detect vulnerabilities like reentrancy, flash loan attacks, and access control flaws in seconds with deep learning.",
+  verification: {
+    // Paste your Google Search Console verification code (from the content attribute of the HTML tag) here.
+    // Example: if Google gives you <meta name="google-site-verification" content="abc123xyz" />,
+    // you should paste "abc123xyz" below.
+    google: "YOUR_GOOGLE_SITE_VERIFICATION_KEY_HERE",
+  },
+  keywords: [
+    "smart contract scanner",
+    "solidity vulnerability checker",
+    "AI smart contract audit",
+    "web3 security tool",
+    "reentrancy attack checker",
+    "solidity security",
+    "blockchain audit",
+    "defi security",
+  ],
+  authors: [{ name: "AetherGuard Team" }],
+  creator: "AetherGuard",
+  publisher: "AetherGuard",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: "AetherGuard | AI Smart Contract Security Copilot",
+    description: "Advanced AI-powered smart contract security audits. Detect 100+ vulnerability classes instantly.",
+    url: "https://aetherguard.vercel.app",
+    siteName: "AetherGuard",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "AetherGuard AI Security Scanner",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AetherGuard | AI Smart Contract Security",
+    description: "Detect smart contract vulnerabilities in seconds with AI.",
+    images: ["/og-image.png"],
+    creator: "@AetherGuard",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: "https://aetherguard.vercel.app",
+  },
 };
 
 export const viewport = {
@@ -20,6 +86,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <StructuredData />
         {children}
         <Toaster 
           position="top-right" 

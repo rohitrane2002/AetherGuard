@@ -17,12 +17,16 @@ from auth import (
     get_user_from_refresh_token,
     hash_password,
     verify_password,
+    revoke_refresh_token,
 )
 from services.security_service import encrypt_secret
 from config import settings
 from database import get_db
 from models import Subscription, User
+from utils.email_utils import is_disposable_email
+from services.otp_service import create_otp_for_user, verify_otp_for_user, send_otp_email
 from schemas import (
+    OtpVerifyRequest,
     RefreshTokenRequest,
     TokenPairResponse,
     UserLoginRequest,
@@ -103,14 +107,28 @@ def _token_pair_response(user: User, db: Session) -> TokenPairResponse:
 @limiter.limit("5/minute")
 async def register_user(request: Request, payload: UserRegisterRequest, db: Session = Depends(get_db)):
     try:
+        # Check for disposable emails
+        if is_disposable_email(payload.email):
+            raise HTTPException(status_code=400, detail="Disposable emails are not allowed")
+
         existing_user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
         if existing_user is not None:
             raise HTTPException(status_code=409, detail="User already exists")
 
-        user = User(email=payload.email, password_hash=hash_password(payload.password), is_active=True, provider="email")
+        user = User(
+            email=payload.email, 
+            password_hash=hash_password(payload.password), 
+            is_active=True, 
+            provider="email",
+            is_email_verified=False # New users must verify
+        )
         db.add(user)
         db.commit()
         db.refresh(user)
+
+        # Generate and "send" OTP
+        otp = create_otp_for_user(db, user)
+        send_otp_email(user.email, otp)
 
         _ensure_free_subscription(db, user)
         _ensure_workspace_bootstrap(db, user)
@@ -132,6 +150,14 @@ async def login_user(request: Request, payload: UserLoginRequest, db: Session = 
             raise HTTPException(status_code=401, detail="Invalid credentials")
         if not user.is_active:
             raise HTTPException(status_code=403, detail="Inactive user")
+        
+        # Check if email is verified for email-password users
+        if user.provider == "email" and not user.is_email_verified:
+            # Resend OTP if they try to login but aren't verified
+            otp = create_otp_for_user(db, user)
+            send_otp_email(user.email, otp)
+            raise HTTPException(status_code=403, detail="EMAIL_NOT_VERIFIED")
+
         _ensure_workspace_bootstrap(db, user)
 
         return _token_pair_response(user, db)
@@ -140,6 +166,44 @@ async def login_user(request: Request, payload: UserLoginRequest, db: Session = 
     except Exception as exc:
         logger.exception("Auth login failed for %s", payload.email)
         raise HTTPException(status_code=500, detail=f"AUTH_LOGIN_CRASH: {type(exc).__name__}: {exc}") from exc
+
+
+@router.post("/verify-otp")
+async def verify_otp(payload: OtpVerifyRequest, db: Session = Depends(get_db)):
+    try:
+        user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if verify_otp_for_user(db, user, payload.code):
+            return {"message": "Email verified successfully"}
+        else:
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP code")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("OTP verification failed for %s", payload.email)
+        raise HTTPException(status_code=500, detail=f"OTP_VERIFY_CRASH: {exc}") from exc
+
+
+@router.post("/resend-otp")
+async def resend_otp(email: str, db: Session = Depends(get_db)):
+    try:
+        user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if user.is_email_verified:
+            return {"message": "Email already verified"}
+            
+        otp = create_otp_for_user(db, user)
+        send_otp_email(user.email, otp)
+        return {"message": "OTP sent successfully"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("OTP resend failed for %s", email)
+        raise HTTPException(status_code=500, detail=f"OTP_RESEND_CRASH: {exc}") from exc
 
 
 @router.post("/refresh", response_model=TokenPairResponse)

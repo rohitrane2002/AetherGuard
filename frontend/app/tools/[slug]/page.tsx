@@ -35,6 +35,32 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
+/* ──────────────────────────────────────────────
+   JSON-LD Structured Data for Tools
+   ────────────────────────────────────────────── */
+function ToolJsonLd({ page }: { page: NonNullable<ReturnType<typeof getPageBySlug>> }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: page.h1,
+    description: page.metaDescription,
+    url: `https://aetherguard.vercel.app/tools/${page.slug}`,
+    applicationCategory: "SecurityApplication",
+    operatingSystem: "All",
+    browserRequirements: "Requires JavaScript. Requires HTML5.",
+    author: {
+      "@type": "Organization",
+      "name": "AetherGuard",
+    },
+    offers: {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+    },
+  };
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
+}
+
 export default function ToolPage({ params }: { params: { slug: string } }) {
   const page = getPageBySlug(params.slug);
   if (!page) notFound();
@@ -42,7 +68,9 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
   const related = getRelatedPages(page);
 
   return (
-    <div className="min-h-screen bg-[#030712]">
+    <>
+      <ToolJsonLd page={page} />
+      <div className="min-h-screen bg-[#030712]">
       {/* ─── Nav ─── */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#030712]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-4 text-sm text-slate-500">
@@ -131,6 +159,22 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
           </section>
         )}
 
+        {/* ─── Cross-Link CTA ─── */}
+        <div className="mt-12 border-t border-white/5 pt-12">
+          <div className="flex flex-col items-center justify-between gap-6 rounded-2xl bg-white/[0.02] p-6 md:flex-row">
+            <div>
+              <h3 className="text-lg font-bold text-white text-pretty">Want to learn more about vulnerabilities?</h3>
+              <p className="text-sm text-slate-400">Visit our Smart Contract Security Encyclopedia for deep-dives into 80+ exploit patterns.</p>
+            </div>
+            <Link
+              href="/audit"
+              className="rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Browse Encyclopedia
+            </Link>
+          </div>
+        </div>
+
         {/* ─── Bottom CTA ─── */}
         <div className="mt-16 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.03] to-transparent p-8 text-center">
           <h2 className="text-2xl font-bold text-white">Ship secure code, every time.</h2>
@@ -150,5 +194,6 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
         © {new Date().getFullYear()} AetherGuard — AI-Powered Smart Contract Security
       </footer>
     </div>
+    </>
   );
 }

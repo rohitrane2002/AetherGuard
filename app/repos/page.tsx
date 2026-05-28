@@ -128,18 +128,26 @@ export default function ReposPage() {
     }
   };
 
+  const [scanningAll, setScanningAll] = useState(false);
+
   const scanAll = async () => {
-    for (const file of solFiles) {
-      if (!scanResults[file.path]) {
-        await scanFile(file);
+    setScanningAll(true);
+    try {
+      for (const file of solFiles) {
+        if (!scanResults[file.path]) {
+          await scanFile(file);
+        }
       }
+      toast.success("Batch scan complete!");
+    } finally {
+      setScanningAll(false);
     }
   };
 
   const filteredRepos = repos.filter(
     (r) =>
       r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.description.toLowerCase().includes(search.toLowerCase())
+      (r.description || "").toLowerCase().includes(search.toLowerCase())
   );
 
   if (!ready) return null;
@@ -432,6 +440,40 @@ export default function ReposPage() {
             )}
           </>
         )}
+        {/* ── Scanning Overlay ───────────────────────── */}
+        <AnimatePresence>
+          {scanningAll && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md"
+            >
+              <div className="text-center">
+                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border-[3px] border-cyan-400 border-t-transparent"
+                  />
+                  <div className="h-4 w-4 animate-ping rounded-full bg-cyan-400" />
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-white">Full Repository Audit</h3>
+                <p className="mt-2 text-slate-400">Our AI Brain is auditing every line of your contracts...</p>
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <span className="h-1.5 w-12 rounded-full bg-cyan-400/20">
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="h-full w-full origin-left bg-cyan-400"
+                    />
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </main>
   );

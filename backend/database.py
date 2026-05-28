@@ -36,6 +36,9 @@ def ensure_runtime_schema_compatibility() -> None:
             "avatar_url": "TEXT",
             "github_username": "TEXT",
             "github_access_token": "TEXT",
+            "otp_code": "TEXT",
+            "otp_expiry": "TIMESTAMP WITH TIME ZONE",
+            "is_email_verified": "BOOLEAN NOT NULL DEFAULT FALSE",
         }
     else:
         missing_user_columns = {
@@ -49,6 +52,9 @@ def ensure_runtime_schema_compatibility() -> None:
             "avatar_url": "TEXT",
             "github_username": "TEXT",
             "github_access_token": "TEXT",
+            "otp_code": "TEXT",
+            "otp_expiry": "DATETIME",
+            "is_email_verified": "BOOLEAN NOT NULL DEFAULT 0",
         }
 
     with engine.begin() as connection:

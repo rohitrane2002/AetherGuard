@@ -229,6 +229,22 @@ export default function AuditPage({ params }: { params: { slug: string } }) {
               </div>
             </section>
           )}
+
+          {/* ─── Cross-Link CTA ─── */}
+          <div className="mt-12 border-t border-white/5 pt-12">
+            <div className="flex flex-col items-center justify-between gap-6 rounded-2xl bg-white/[0.02] p-6 md:flex-row">
+              <div>
+                <h3 className="text-lg font-bold text-white">Need specialized security tools?</h3>
+                <p className="text-sm text-slate-400">Browse our suite of free AI tools for gas optimization, ABI decoding, and more.</p>
+              </div>
+              <Link
+                href="/tools"
+                className="rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                View Free Tools
+              </Link>
+            </div>
+          </div>
         </article>
 
         {/* ─── Footer ─── */}
