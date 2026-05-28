@@ -48,6 +48,7 @@ from schemas import (
     FixContractRequest,
     FixContractResponse,
     HealthResponse,
+    GuestStatsResponse,
     NotificationResponse,
     RefreshTokenRequest,
     ShareReportRequest,
