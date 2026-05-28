@@ -13,7 +13,7 @@ export const metadata = {
     // Paste your Google Search Console verification code (from the content attribute of the HTML tag) here.
     // Example: if Google gives you <meta name="google-site-verification" content="abc123xyz" />,
     // you should paste "abc123xyz" below.
-    google: "YOUR_GOOGLE_SITE_VERIFICATION_KEY_HERE",
+    google: "DMsEaHOGEbAOjKBeO0M7KFlPMgZWaEl0V3TYPz7-L4I",
   },
   keywords: [
     "smart contract scanner",
