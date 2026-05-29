@@ -1,0 +1,21 @@
+{
+  "name": "AetherGuard",
+  "short_name": "AetherGuard",
+  "description": "AI-native smart contract security platform for Solidity and Web3 protocols. Detect vulnerabilities, analyze contracts, and secure deployments with advanced AI scanning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#040711",
+  "theme_color": "#0d1325",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
