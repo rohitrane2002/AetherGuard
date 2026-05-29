@@ -22,4 +22,15 @@ class InMemoryRateLimiter:
         bucket.append(now)
         return True
 
+    def get_usage(self, key: str, window_seconds: int) -> int:
+        now = time.time()
+        bucket = self._buckets[key]
+        while bucket and bucket[0] <= now - window_seconds:
+            bucket.popleft()
+        return len(bucket)
+
+    def increment(self, key: str, window_seconds: int) -> None:
+        now = time.time()
+        self._buckets[key].append(now)
+
 rate_limiter = InMemoryRateLimiter()

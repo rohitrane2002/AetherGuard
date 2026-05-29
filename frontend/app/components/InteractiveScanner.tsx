@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import ScanningTerminal from "./analyze/ScanningTerminal";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://aetherguard-api.onrender.com";
 
@@ -134,6 +135,11 @@ export default function InteractiveScanner() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── Cyber Console Terminal ── */}
+      <div className="mt-6">
+        <ScanningTerminal loading={loading} results={results} />
       </div>
 
       {/* ── Instant Results Mock/Preview Area ────────────────── */}

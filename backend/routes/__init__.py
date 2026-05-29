@@ -235,6 +235,85 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
                 raise
             return []
 
+    import time
+    import logging
+    logger = logging.getLogger(__name__)
+
+    async def predict_with_custom_model(source: str, request: Request, current_user_email: str) -> dict:
+        analyzer = get_analyzer()
+        
+        # Log incoming scan request
+        logger.info(
+            "Incoming scan request: endpoint=%s, user=%s, client_ip=%s, content_length=%d",
+            request.url.path,
+            current_user_email,
+            request.client.host if request.client else "unknown",
+            len(source)
+        )
+        
+        model_backend = settings.model_backend
+        logger.info("Calling model endpoint/backend: %s", model_backend)
+        
+        start_time = time.time()
+        result = None
+        exact_error = None
+        
+        if analyzer is not None:
+            # Retry system (3 attempts)
+            for attempt in range(3):
+                try:
+                    result = analyzer.predict(source)
+                    exact_error = None
+                    break
+                except Exception as e:
+                    exact_error = e
+                    logger.warning("Prediction attempt %d failed: %s", attempt + 1, e)
+                    if attempt < 2:
+                        await asyncio.sleep(0.1)
+        else:
+            exact_error = RuntimeError("Analyzer model is not initialized")
+            
+        inference_duration = time.time() - start_time
+        
+        if result is not None:
+            # Log successful prediction details
+            logger.info(
+                "Scan complete: model=%s, duration=%.4fs, prediction=%s, prob_vulnerable=%.4f",
+                model_backend,
+                inference_duration,
+                result.get("prediction"),
+                result.get("prob_vulnerable", 0.0)
+            )
+            # Log raw model response
+            logger.info("Raw model response: %s", result)
+            return {
+                "prediction": result["prediction"],
+                "prob_secure": result["prob_secure"],
+                "prob_vulnerable": result["prob_vulnerable"],
+                "model_source": result["model_source"],
+                "duration": inference_duration
+            }
+        else:
+            # Log exact thrown error
+            logger.error(
+                "Prediction failed. Triggering heuristic fallback. Error: %s",
+                exact_error,
+                exc_info=True
+            )
+            # Heuristic fallback analysis
+            findings = infer_vulnerability_findings(source)
+            prediction = "vulnerable" if findings else "secure"
+            prob_vulnerable = 0.8 if prediction == "vulnerable" else 0.1
+            prob_secure = 1.0 - prob_vulnerable
+            return {
+                "prediction": prediction,
+                "prob_secure": prob_secure,
+                "prob_vulnerable": prob_vulnerable,
+                "model_source": "heuristic-fallback",
+                "duration": inference_duration,
+                "error": str(exact_error)
+            }
+
     router.include_router(growth_router)
     
     @router.get("/analyze/stats", response_model=GuestStatsResponse)
@@ -255,22 +334,34 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
 
     @router.get("/health", response_model=HealthResponse)
     async def health_check(db: Session = Depends(get_db)):
+        analyzer = get_analyzer()
+        
+        # Verify database connectivity
         database_connected = True
         try:
             db.execute(text("SELECT 1"))
         except Exception:
             database_connected = False
 
-        analyzer = get_analyzer()
-        analyzer_init_error = get_analyzer_init_error()
+        backend_status = "online" if database_connected else "offline"
+        ai_model_status = "connected" if analyzer is not None else "disconnected"
+        
+        inference_status = "working"
+        if analyzer is not None:
+            try:
+                # Verify that inference is working by running a quick prediction
+                analyzer.predict("pragma solidity ^0.8.0; contract Test {}")
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).exception("Health check inference test failed")
+                inference_status = "failed"
+        else:
+            inference_status = "failed"
+
         return HealthResponse(
-            status="ok" if analyzer is not None and database_connected else "degraded",
-            model={
-                "ready": analyzer is not None,
-                "source": analyzer.model_source if analyzer else None,
-                "error": analyzer_init_error,
-            },
-            database={"connected": database_connected},
+            backend=backend_status,
+            ai_model=ai_model_status,
+            inference=inference_status,
         )
 
     @router.get("/dashboard/summary", response_model=DashboardSummaryResponse)
@@ -629,55 +720,89 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         if usage["remaining_today"] <= 0:
             raise HTTPException(status_code=403, detail=f"Daily analysis limit reached for the {current_user.plan} plan")
 
-        # Initialize engines
+        # Step 1: Model Prediction & Logging (our custom model)
+        model_result = await predict_with_custom_model(source, request, current_user.email)
+
+        # Step 2: Heuristic Analysis Engines
         rule_engine = RuleEngine()
-        ai_engine = AIEngine()
         score_engine = ScoringEngine()
 
-        # Step 1: Rule Engine Analysis
-        # UX Step: "Analyzing contract..."
-        await asyncio.sleep(0.5) 
+        await asyncio.sleep(0.5) # UX delay
         rule_issues = rule_engine.analyze(source)
+        heuristic_findings = infer_vulnerability_findings(source)
+        safe_patterns = infer_safe_patterns(source)
 
-        # Step 2: Semantic Logic Review (Deep AI Audit)
-        # UX Step: "AI Brain performing deep logic audit..."
-        await asyncio.sleep(0.7)
-        semantic_issues = ai_engine.semantic_logic_review(source)
-        
-        # Merge issues
-        all_issues = rule_issues + semantic_issues
+        # Merge structural issues from rule engine and heuristics
+        all_issues = []
+        seen_slugs = set()
+        for issue in rule_issues:
+            slug = issue.get("id", "rule-vulnerability")
+            seen_slugs.add(slug)
+            all_issues.append({
+                "slug": slug,
+                "label": issue.get("name", "Vulnerability Detected"),
+                "severity": issue.get("severity", "medium"),
+                "confidence": 0.95,
+                "summary": issue.get("description", "Structural check vulnerability detected."),
+                "recommendation": issue.get("recommendation", "Review code structure and access controls."),
+                "line_numbers": issue.get("line_numbers", []),
+            })
 
-        # Step 3: Scoring
-        # UX Step: "Calculating risk score..."
-        await asyncio.sleep(0.3)
+        for issue in heuristic_findings:
+            slug = issue.get("slug")
+            if slug not in seen_slugs:
+                seen_slugs.add(slug)
+                all_issues.append({
+                    "slug": slug,
+                    "label": issue.get("label", "Vulnerability Detected"),
+                    "severity": issue.get("severity", "medium"),
+                    "confidence": issue.get("confidence", 0.85),
+                    "summary": issue.get("summary", "Heuristic check vulnerability detected."),
+                    "recommendation": issue.get("recommendation", "Harden affected patterns."),
+                    "line_numbers": [],
+                })
+
+        # Inject semantic vulnerability from custom model if flagged and no structural findings
+        if model_result["prediction"] == "vulnerable" and not all_issues:
+            all_issues.append({
+                "slug": "semantic-vulnerability",
+                "label": "Semantic Logic Vulnerability",
+                "severity": "high",
+                "confidence": model_result["prob_vulnerable"],
+                "summary": "Deep model scan flagged potential structural or logical anomalies.",
+                "recommendation": "Perform a manual line-by-line review of access permissions and state modifications.",
+                "line_numbers": []
+            })
+
         score_data = score_engine.calculate(all_issues)
-
-        # Step 4: AI Reasoning (Explanation & Fix)
-        # UX Step: "AI Brain engaging remediation..."
-        await asyncio.sleep(0.6)
-        ai_result = ai_engine.analyze_code(source, all_issues)
-
-        # Step 5: PoC Test Generation (Optional/Premium)
-        # UX Step: "Finalizing PoC exploit..."
-        await asyncio.sleep(0.4)
-        poc_test = ai_engine.generate_poc_test(source, all_issues)
-
-        # Step 6: Benchmarking
         benchmarks = score_engine.get_benchmarks(score_data["score"])
 
-        # Build final response
+        # Step 3: Local secure rewrite & explanation fallback
+        fixed_code, highlighted_changes = generate_fixed_contract(source, all_issues)
+        explanation = build_analysis_summary(model_result["prediction"], score_data["score"], all_issues, safe_patterns)
+
+        # Optional OpenAI/OpenRouter AI Engine for higher-fidelity reasoning if api_key is configured
+        ai_engine = AIEngine()
+        poc_test = None
+        if ai_engine.api_key:
+            try:
+                ai_result = ai_engine.analyze_code(source, all_issues)
+                explanation = ai_result.get("explanation", explanation)
+                fixed_code = ai_result.get("fix", fixed_code)
+                poc_test = ai_engine.generate_poc_test(source, all_issues)
+            except Exception as e:
+                logger.warning("Optional AI Engine reasoning failed: %s", e)
+
         findings = []
         for issue in all_issues:
-            name = issue.get("name") or issue.get("label") or "Detected Vulnerability"
             findings.append({
-                "slug": issue.get("id", name.lower().replace(" ", "-")),
-                "label": name,
-                "severity": issue.get("severity", "medium"),
-                "confidence": 0.95 if "id" in issue else 0.82, # Higher for rule engine
-                "summary": issue.get("description") or issue.get("summary") or "Vulnerability detected in contract logic.",
-                "recommendation": issue.get("recommendation") or "Review sensitive logic and tighten state transitions.",
+                "slug": issue.get("slug"),
+                "label": issue.get("label"),
+                "severity": issue.get("severity"),
+                "confidence": issue.get("confidence"),
+                "summary": issue.get("summary"),
+                "recommendation": issue.get("recommendation"),
                 "line_numbers": issue.get("line_numbers", []),
-                "language": issue.get("language", "solidity")
             })
 
         final_result = {
@@ -688,26 +813,27 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             "findings": findings,
             "steps": [
                 "Rule engine completed: Structural check finished.",
-                "AI brain performed a deep semantic logic audit.",
+                f"Custom model '{model_result['model_source']}' performed audit.",
                 "Scoring engine calculated risk at " + str(score_data["score"]) + "/100.",
                 "Benchmarking analysis compared results with industry standards.",
-                "AI brain generated audit explanation and secure rewrite.",
-                "AI synthesized a Proof-of-Concept exploit test."
+                "Secure remediation rewrite compiled.",
+                "AI synthesized a Proof-of-Concept exploit test." if poc_test else "Local remediation preview ready."
             ],
-
-            "explanation": ai_result.get("explanation", "AI analysis complete."),
-            "fix": ai_result.get("fix", "// No specific fix generated."),
+            "explanation": explanation,
+            "fix": fixed_code,
             "poc_test": poc_test,
-            "confidence": 0.95 if rule_issues else 0.85,
-            "log_id": 0, 
+            "confidence": model_result["prob_vulnerable"] if model_result["prediction"] == "vulnerable" else model_result["prob_secure"],
+            "log_id": 0,
             "risk_score": score_data["score"],
-            "summary": ai_result.get("explanation", "Contract analysis summary."),
-            "report_url": f"/api/reports/{{log_id}}/download", # Will be updated after logging
-            "fix_suggestions": [
-                "Implement ReentrancyGuard where external calls exist.",
-                "Review access control modifiers for protocol-level functions.",
-                "Ensure bounded arithmetic or use Solidity 0.8+ checked math."
-            ]
+            "summary": explanation,
+            "report_url": f"/api/reports/{{log_id}}/download",
+            "fix_suggestions": build_fix_suggestions(all_issues),
+            "safe_patterns": safe_patterns,
+            "autofix_preview": build_autofix_preview(all_issues, safe_patterns),
+            "prediction": model_result["prediction"],
+            "prob_secure": model_result["prob_secure"],
+            "prob_vulnerable": model_result["prob_vulnerable"],
+            "model_source": model_result["model_source"],
         }
 
         # Log to DB (Existing functionality)
@@ -715,11 +841,11 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             user_id=current_user.id,
             user_email=current_user.email,
             source_code=source,
-            prediction="vulnerable" if rule_issues or semantic_issues else "secure",
-            prob_secure=1.0 - (score_data["score"]/100.0),
-            prob_vulnerable=score_data["score"]/100.0,
+            prediction=model_result["prediction"],
+            prob_secure=model_result["prob_secure"],
+            prob_vulnerable=model_result["prob_vulnerable"],
             confidence=final_result["confidence"],
-            model_source="hybrid-modular-v1",
+            model_source=model_result["model_source"],
         )
         db.add(analysis_log)
         db.commit()
@@ -748,38 +874,79 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         if not source.strip():
             raise HTTPException(status_code=400, detail="Contract source is required")
         
-        # Fast scan for guest
+        # Use our predict_with_custom_model
+        model_result = await predict_with_custom_model(source, request, "guest")
+        
         rule_engine = RuleEngine()
-        ai_engine = AIEngine()
         score_engine = ScoringEngine()
 
-        await asyncio.sleep(0.5)
         rule_issues = rule_engine.analyze(source)
-        
-        await asyncio.sleep(0.5)
-        semantic_issues = ai_engine.semantic_logic_review(source)
-        
-        all_issues = rule_issues + semantic_issues
-        score_data = score_engine.calculate(all_issues)
+        heuristic_findings = infer_vulnerability_findings(source)
+        safe_patterns = infer_safe_patterns(source)
 
-        # Soft Paywall: Mask sensitive fields for guests
-        # We show THAT there are issues, but mask the details to drive registration
-        masked_findings = []
-        for issue in all_issues:
-            is_critical = issue.get("severity") == "high"
-            masked_findings.append({
-                "slug": issue.get("id", "secret"),
+        # Merge structural issues
+        all_issues = []
+        seen_slugs = set()
+        for issue in rule_issues:
+            slug = issue.get("id", "rule-vulnerability")
+            seen_slugs.add(slug)
+            all_issues.append({
+                "slug": slug,
                 "label": issue.get("name", "Vulnerability Detected"),
                 "severity": issue.get("severity", "medium"),
-                "confidence": 0.9,
-                "summary": "Upgrade to Pro to view the full impact and mitigation of this finding." if is_critical else issue.get("description"),
-                "recommendation": "Register a free account to unlock fix suggestions." if is_critical else "Review logic.",
+                "confidence": 0.95,
+                "summary": issue.get("description", "Structural check vulnerability detected."),
+                "recommendation": issue.get("recommendation", "Review code structure and access controls."),
                 "line_numbers": issue.get("line_numbers", []),
             })
 
-        # Track guest scan in logs with a dummy user if needed, or just return result
-        # For now, we increment the usage and return the masked result
+        for issue in heuristic_findings:
+            slug = issue.get("slug")
+            if slug not in seen_slugs:
+                seen_slugs.add(slug)
+                all_issues.append({
+                    "slug": slug,
+                    "label": issue.get("label", "Vulnerability Detected"),
+                    "severity": issue.get("severity", "medium"),
+                    "confidence": issue.get("confidence", 0.85),
+                    "summary": issue.get("summary", "Heuristic check vulnerability detected."),
+                    "recommendation": issue.get("recommendation", "Harden affected patterns."),
+                    "line_numbers": [],
+                })
+
+        if model_result["prediction"] == "vulnerable" and not all_issues:
+            all_issues.append({
+                "slug": "semantic-vulnerability",
+                "label": "Semantic Logic Vulnerability",
+                "severity": "high",
+                "confidence": model_result["prob_vulnerable"],
+                "summary": "Deep model scan flagged potential structural or logical anomalies.",
+                "recommendation": "Perform a manual review of access permissions and state modifications.",
+                "line_numbers": []
+            })
+
+        score_data = score_engine.calculate(all_issues)
+
+        # Soft Paywall: Mask sensitive fields for guests
+        masked_findings = []
+        for issue in all_issues:
+            is_critical = issue.get("severity") == "high" or issue.get("severity") == "critical"
+            masked_findings.append({
+                "slug": issue.get("slug", "secret"),
+                "label": issue.get("label", "Vulnerability Detected"),
+                "severity": issue.get("severity", "medium"),
+                "confidence": issue.get("confidence", 0.9),
+                "summary": "Upgrade to Pro to view the full impact and mitigation of this finding." if is_critical else issue.get("summary"),
+                "recommendation": "Register a free account to unlock fix suggestions." if is_critical else issue.get("recommendation"),
+                "line_numbers": issue.get("line_numbers", []),
+            })
+
+        # Track guest scan in logs
         rate_limiter.increment(usage_key, 86400)
+
+        # Soft Paywall: Mask explanation and fix
+        explanation = "Result partially masked. Sign up to unlock full deep-ai reasoning and remediations."
+        fix = "// Code rewrite locked. Create an account to generate secure code."
 
         return {
             "score": score_data["score"],
@@ -787,14 +954,18 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             "issues": [f["label"] for f in masked_findings],
             "findings": masked_findings,
             "steps": ["Guest analysis complete. Pre-deployment audit finished."],
-            "explanation": "Result partially masked. Sign up to unlock full deep-ai reasoning and remediations.",
-            "fix": "// Code rewrite locked. Create an account to generate secure code.",
-            "confidence": 0.88,
+            "explanation": explanation,
+            "fix": fix,
+            "confidence": model_result["prob_vulnerable"] if model_result["prediction"] == "vulnerable" else model_result["prob_secure"],
             "log_id": 0,
             "risk_score": score_data["score"],
             "summary": "Guest Scan Summary",
             "fix_suggestions": ["Unlock Pro to see suggestions"],
-            "remaining_today": max(0, 3 - rate_limiter.get_usage(usage_key, 86400))
+            "remaining_today": max(0, 3 - rate_limiter.get_usage(usage_key, 86400)),
+            "prediction": model_result["prediction"],
+            "prob_secure": model_result["prob_secure"],
+            "prob_vulnerable": model_result["prob_vulnerable"],
+            "model_source": model_result["model_source"],
         }
 
 

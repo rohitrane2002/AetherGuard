@@ -252,6 +252,6 @@ class GuestStatsResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    status: str
-    model: dict[str, Any]
-    database: dict[str, Any]
+    backend: str
+    ai_model: str
+    inference: str
