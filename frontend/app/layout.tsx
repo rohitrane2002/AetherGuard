@@ -33,6 +33,17 @@ export const metadata = {
     address: false,
     telephone: false,
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
+  },
+  other: {
+    "og:site_name": "AetherGuard AI",
+  },
   openGraph: {
     title: "AetherGuard | AI Smart Contract Security Copilot",
     description: "Advanced AI-powered smart contract security audits. Detect 100+ vulnerability classes instantly.",
