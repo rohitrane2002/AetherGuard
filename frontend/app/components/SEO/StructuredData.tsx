@@ -32,6 +32,14 @@ export default function StructuredData() {
     }
   };
 
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "AetherGuard AI",
+    "alternateName": "AetherGuard",
+    "url": "https://aetherguard.vercel.app"
+  };
+
   return (
     <>
       <script
@@ -41,6 +49,10 @@ export default function StructuredData() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
       />
     </>
   );

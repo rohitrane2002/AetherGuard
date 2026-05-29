@@ -37,7 +37,7 @@ export const metadata = {
     title: "AetherGuard | AI Smart Contract Security Copilot",
     description: "Advanced AI-powered smart contract security audits. Detect 100+ vulnerability classes instantly.",
     url: "https://aetherguard.vercel.app",
-    siteName: "AetherGuard",
+    siteName: "AetherGuard AI",
     images: [
       {
         url: "/og-image.png",
