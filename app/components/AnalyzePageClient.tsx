@@ -13,6 +13,7 @@ import AppShell from "./AppShell";
 import ContractEditorPanel from "./analyze/ContractEditorPanel";
 import CopilotPanel from "./analyze/CopilotPanel";
 import ScanProgressPanel from "./analyze/ScanProgressPanel";
+import ScanningTerminal from "./analyze/ScanningTerminal";
 import { buildLineInsights } from "./analyze/editorInsights";
 import type { AnalysisResult, CopilotMessage } from "./analyze/types";
 import { BenchmarkingChart, Panel, SectionHeading, StatCard } from "./ui";
@@ -402,6 +403,11 @@ export default function AnalyzePageClient() {
               sending={false}
             />
           </div>
+          <ScanningTerminal 
+            loading={loading} 
+            results={activeResult} 
+            live={liveLoading} 
+          />
         </div>
 
         <div className="grid items-start gap-6 xl:grid-cols-[0.58fr_0.42fr]">

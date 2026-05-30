@@ -6,20 +6,21 @@ export default function StructuredData() {
     "@type": "Organization",
     "name": "AetherGuard",
     "url": "https://aetherguard.vercel.app",
-    "logo": "https://aetherguard.vercel.app/favicon.ico",
+    "logo": "https://aetherguard.vercel.app/logo.png",
     "sameAs": [
-      "https://twitter.com/AetherGuard",
+      "https://x.com/aetherguardos?s=21",
       "https://github.com/AetherGuard"
     ],
-    "description": "AI-powered smart contract security auditing platform."
+    "description": "AI-native smart contract security platform for Solidity and Web3 protocols."
   };
 
   const softwareSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "AetherGuard AI Scanner",
+    "name": "AetherGuard",
     "operatingSystem": "Web",
     "applicationCategory": "SecurityApplication",
+    "description": "AI-native smart contract security platform for Solidity and Web3 protocols.",
     "offers": {
       "@type": "Offer",
       "price": "0",
@@ -32,6 +33,20 @@ export default function StructuredData() {
     }
   };
 
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "AetherGuard",
+    "alternateName": "AetherGuard AI",
+    "url": "https://aetherguard.vercel.app",
+    "description": "AI-native smart contract security platform for Solidity and Web3 protocols. Detect vulnerabilities, analyze contracts, and secure deployments with advanced AI scanning.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://aetherguard.vercel.app/analyze?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <>
       <script
@@ -41,6 +56,10 @@ export default function StructuredData() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
       />
     </>
   );
