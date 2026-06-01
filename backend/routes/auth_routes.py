@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
-from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.exc import OperationalError, ProgrammingError, IntegrityError
 from sqlalchemy.orm import Session
 
 from auth import (
@@ -246,22 +246,38 @@ def _upsert_oauth_user(
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
 
     if user is None:
-        user = User(
-            id=uuid.uuid4(),
-            email=email,
-            password_hash=None,
-            is_active=True,
-            provider=provider,
-            avatar_url=avatar_url,
-            github_username=github_username,
-            github_access_token=encrypt_secret(github_access_token) if github_access_token else None,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-        _ensure_free_subscription(db, user)
-        _ensure_workspace_bootstrap(db, user)
+        try:
+            user = User(
+                id=uuid.uuid4(),
+                email=email,
+                password_hash=None,
+                is_active=True,
+                provider=provider,
+                avatar_url=avatar_url,
+                github_username=github_username,
+                github_access_token=encrypt_secret(github_access_token) if github_access_token else None,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+            _ensure_free_subscription(db, user)
+            _ensure_workspace_bootstrap(db, user)
+        except IntegrityError:
+            db.rollback()
+            # User was created concurrently by another request, fetch the existing record
+            user = db.execute(select(User).where(User.email == email)).scalar_one()
+            # Update existing user data
+            if avatar_url:
+                user.avatar_url = avatar_url
+            if github_username:
+                user.github_username = github_username
+            if github_access_token:
+                user.github_access_token = encrypt_secret(github_access_token)
+            if user.provider == "email":
+                user.provider = provider
+            db.commit()
+            _ensure_workspace_bootstrap(db, user)
     else:
         # Update existing user with latest OAuth data
         if avatar_url:

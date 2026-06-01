@@ -54,6 +54,13 @@ def build_analyzer() -> Analyzer:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global analyzer, analyzer_init_error
+    
+    # Verify DB connection on startup
+    from database import verify_db_connection
+    if not verify_db_connection():
+        logger.critical("Database connection validation failed. Exiting startup.")
+        raise RuntimeError("Database connection validation failed. Check connection string diagnostics in logs.")
+
     try:
         ensure_runtime_schema_compatibility()
         analyzer = build_analyzer()

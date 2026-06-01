@@ -1,14 +1,69 @@
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+import logging
 from config import settings
 
+logger = logging.getLogger(__name__)
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+if settings.database_url.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+    engine = create_engine(
+        settings.database_url,
+        future=True,
+        pool_pre_ping=True,
+        connect_args=connect_args
+    )
+else:
+    connect_args = {"sslmode": "require"}
+    engine = create_engine(
+        settings.database_url,
+        future=True,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        pool_size=10,
+        max_overflow=20,
+        connect_args=connect_args
+    )
 
-engine = create_engine(settings.database_url, future=True, pool_pre_ping=True, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 Base = declarative_base()
+
+
+def verify_db_connection() -> bool:
+    url = settings.database_url
+    sanitized_url = url
+    if "://" in url:
+        scheme, rest = url.split("://", 1)
+        if "@" in rest:
+            userinfo, hostinfo = rest.rsplit("@", 1)
+            if ":" in userinfo:
+                username, password = userinfo.split(":", 1)
+                userinfo = f"{username}:******"
+            sanitized_url = f"{scheme}://{userinfo}@{hostinfo}"
+            
+    logger.info(f"Validating database connectivity: {sanitized_url}")
+    
+    import time
+    from sqlalchemy.exc import OperationalError
+    
+    retries = 3
+    delay = 2
+    for attempt in range(1, retries + 1):
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("Database connectivity check passed.")
+            return True
+        except (OperationalError, Exception) as e:
+            logger.warning(f"Database connection attempt {attempt} failed: {e}")
+            if attempt < retries:
+                time.sleep(delay)
+                delay *= 2
+            else:
+                logger.error(f"Failed to connect to database after {retries} attempts.")
+                
+    return False
 
 
 def ensure_runtime_schema_compatibility() -> None:

@@ -77,11 +77,59 @@ class Settings:
 
     @staticmethod
     def _normalize_database_url(database_url: str) -> str:
-        if database_url.startswith("postgres://"):
-            return database_url.replace("postgres://", "postgresql+psycopg://", 1)
-        if database_url.startswith("postgresql://"):
-            return database_url.replace("postgresql://", "postgresql+psycopg://", 1)
-        return database_url
+        if not database_url:
+            return database_url
+            
+        if database_url.startswith("sqlite"):
+            return database_url
+            
+        try:
+            import urllib.parse
+            
+            # Extract scheme
+            if "://" in database_url:
+                scheme, rest = database_url.split("://", 1)
+            else:
+                scheme = "postgresql"
+                rest = database_url
+                
+            # Normalize scheme for SQLAlchemy + psycopg3
+            if scheme in ["postgres", "postgresql"]:
+                scheme = "postgresql+psycopg"
+            elif scheme == "postgresql+psycopg2":
+                scheme = "postgresql+psycopg"
+                
+            # Separate credentials from host
+            if "@" in rest:
+                userinfo, hostinfo = rest.rsplit("@", 1)
+                
+                # Separate username and password
+                if ":" in userinfo:
+                    username, password = userinfo.split(":", 1)
+                    # Unquote first to prevent double encoding
+                    unquoted_password = urllib.parse.unquote(password)
+                    quoted_password = urllib.parse.quote_plus(unquoted_password)
+                else:
+                    username = userinfo
+                    quoted_password = None
+                    
+                unquoted_username = urllib.parse.unquote(username)
+                # Keep dots safe for Supabase user pooler usernames (postgres.project-ref)
+                quoted_username = urllib.parse.quote_plus(unquoted_username, safe=".")
+                
+                if quoted_password is not None:
+                    rest = f"{quoted_username}:{quoted_password}@{hostinfo}"
+                else:
+                    rest = f"{quoted_username}@{hostinfo}"
+            
+            return f"{scheme}://{rest}"
+        except Exception:
+            # Fallback to simple replace if parser fails
+            if database_url.startswith("postgres://"):
+                return database_url.replace("postgres://", "postgresql+psycopg://", 1)
+            if database_url.startswith("postgresql://"):
+                return database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+            return database_url
 
 
 settings = Settings()
