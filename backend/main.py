@@ -58,8 +58,7 @@ async def lifespan(app: FastAPI):
     # Verify DB connection on startup
     from database import verify_db_connection
     if not verify_db_connection():
-        logger.critical("Database connection validation failed. Exiting startup.")
-        raise RuntimeError("Database connection validation failed. Check connection string diagnostics in logs.")
+        logger.critical("Database connection validation failed. Booting in degraded mode (endpoints relying on database will fail until connection is restored).")
 
     try:
         ensure_runtime_schema_compatibility()
