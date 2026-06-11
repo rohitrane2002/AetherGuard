@@ -30,6 +30,8 @@ export default function SingleReportPage() {
 
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
     if (!reportId) return;
@@ -38,11 +40,9 @@ export default function SingleReportPage() {
       try {
         const response = await authFetch(`${API_BASE_URL}/reports/${reportId}`);
         if (!response.ok) {
-          if (response.status === 401 || response.status === 403) {
-            toast.error("You do not have permission to view this report.");
-          } else {
-            toast.error("Report not found.");
-          }
+          const errData = await response.json().catch(() => ({}));
+          setErrorStatus(response.status);
+          setErrorMsg(errData.detail || "Unable to retrieve report.");
           setLoading(false);
           return;
         }
@@ -70,6 +70,10 @@ export default function SingleReportPage() {
 
   const handleDownloadPdf = async () => {
     if (!reportId) return;
+    if (!reportData || !reportData.results) {
+      toast.error("Cannot export: Report data is empty or still loading.");
+      return;
+    }
     await exportPdf("report-render-target");
   };
 
@@ -120,15 +124,22 @@ export default function SingleReportPage() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-24 border border-dashed border-white/10 rounded-3xl bg-white/[0.02] text-center space-y-4">
-            <ShieldCheckIcon className="h-12 w-12 text-slate-600" />
-            <h3 className="text-lg font-bold text-white">Report Restricted or Dead</h3>
-            <p className="text-sm text-slate-400 max-w-sm">
-              Either this report reference does not exist, or you lack the permission keys required to audit this scope.
+          <div className="flex flex-col items-center justify-center py-24 border border-dashed border-white/10 rounded-3xl bg-white/[0.02] text-center space-y-4 px-6">
+            <ShieldCheckIcon className="h-12 w-12 text-slate-600 animate-pulse" />
+            <h3 className="text-lg font-bold text-white">
+              {errorStatus === 403 ? "Report Access Restricted" : "Report Missing or Dead"}
+            </h3>
+            <p className="text-sm text-slate-400 max-w-lg leading-relaxed">
+              {errorMsg || `Either this report reference (ID: #${reportId}) does not exist, or you lack the permission keys required to audit this scope.`}
             </p>
+            {errorStatus === 403 && (
+              <p className="text-xs text-slate-500 max-w-sm">
+                If you are the owner, check that you are signed in with the same email used to run the scan.
+              </p>
+            )}
             <button
               onClick={() => router.push("/analyze")}
-              className="rounded-lg bg-white/10 border border-white/10 px-5 py-2 text-sm font-medium text-white hover:bg-white/15 transition"
+              className="rounded-lg bg-white/10 border border-white/10 px-5 py-2 text-sm font-medium text-white hover:bg-white/15 transition mt-2"
             >
               Go to Scan Console
             </button>

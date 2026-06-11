@@ -1149,14 +1149,28 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         db: Session = Depends(get_db)
     ):
         import json
+        logger.info(f"[Report Retrieval] Request for log_id={log_id}, current_user={current_user.email if current_user else 'None'}")
+        
         log = db.execute(
             select(AnalysisLog).where(AnalysisLog.id == log_id)
         ).scalar_one_or_none()
 
         if not log:
-            raise HTTPException(status_code=404, detail="Analysis log not found")
+            logger.warning(f"[Report Retrieval] Log not found: log_id={log_id}")
+            raise HTTPException(
+                status_code=404, 
+                detail=f"REPORT_NOT_FOUND: Report ID #{log_id} does not exist in the database."
+            )
 
-        is_owner = current_user and log.user_id == current_user.id
+        logger.info(f"[Report Retrieval] Found log_id={log_id}. log.user_id={log.user_id}, log.user_email={log.user_email}")
+
+        is_owner = False
+        if current_user:
+            is_owner = (
+                (log.user_id is not None and str(log.user_id) == str(current_user.id)) or
+                (log.user_email and log.user_email.lower() == current_user.email.lower())
+            )
+            
         is_shared = False
         shared_entry = db.execute(
             select(SharedReport).where(SharedReport.analysis_log_id == log_id)
@@ -1164,17 +1178,25 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         if shared_entry:
             is_shared = True
 
+        logger.info(f"[Report Retrieval] Access check: is_owner={is_owner}, is_shared={is_shared}")
+
         if not is_owner and not is_shared:
-            raise HTTPException(status_code=403, detail="Access to this report is restricted")
+            logger.warning(f"[Report Retrieval] Access denied for log_id={log_id}, current_user={current_user.email if current_user else 'None'}")
+            raise HTTPException(
+                status_code=403, 
+                detail="REPORT_OWNERSHIP_MISMATCH: This report belongs to another user. Please verify your active credentials."
+            )
 
         results = None
         if log.results_json:
             try:
                 results = json.loads(log.results_json)
-            except Exception:
+            except Exception as e:
+                logger.error(f"[Report Retrieval] Failed decoding results_json for log_id={log_id}: {e}")
                 pass
 
         if not results:
+            logger.info(f"[Report Retrieval] Reconstructing results fallback for log_id={log_id}")
             results = {
                 "score": int(log.prob_vulnerable * 100),
                 "severity": "high" if log.prob_vulnerable > 0.7 else "medium" if log.prob_vulnerable > 0.3 else "low",
@@ -1193,6 +1215,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
                 "risk_score": int(log.prob_vulnerable * 100),
             }
 
+        logger.info(f"[Report Retrieval] Success: Returning report payload for log_id={log_id}")
         return {
             "source_code": log.source_code,
             "created_at": log.created_at,
