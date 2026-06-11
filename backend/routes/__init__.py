@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 import json
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
@@ -238,8 +241,6 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             return []
 
     import time
-    import logging
-    logger = logging.getLogger(__name__)
 
     async def predict_with_custom_model(source: str, request: Request, current_user_email: str) -> dict:
         analyzer = get_analyzer()
@@ -1086,16 +1087,48 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         rule_engine = RuleEngine()
         ai_engine = AIEngine()
         
-        # Detect issues to inform the AI
+        # Detect issues to inform the AI/heuristic resolver
         issues = rule_engine.analyze(source)
         
-        # Generate the fix
-        result = ai_engine.analyze_code(source, issues)
+        # Prepare findings payload for local heuristic fallback
+        findings = []
+        for issue in issues:
+            findings.append({
+                "slug": issue.get("id"),
+                "label": issue.get("name"),
+                "severity": issue.get("severity"),
+                "summary": issue.get("description"),
+            })
+            
+        # Calculate local fallback fixes
+        fallback_fixed_code, fallback_changes = generate_fixed_contract(source, findings)
         
+        fixed_code = None
+        summary = None
+        highlighted_changes = []
+        
+        if ai_engine.api_key:
+            try:
+                result = ai_engine.analyze_code(source, issues)
+                if result and "fix" in result:
+                    # Ignore bypassed/failed responses from the model
+                    if not result["fix"].startswith("// Please provide") and not result["fix"].startswith("// AI Generation error."):
+                        fixed_code = result["fix"]
+                        summary = result.get("explanation", "AI successfully corrected the contract.")
+                        highlighted_changes = [f"Fixed {issue['name']}" for issue in issues] if issues else ["Optimized contract structure and safety patterns."]
+            except Exception as e:
+                logger.error("AI Engine analyze_code failed: %s", e)
+                
+        # If AI generation wasn't available or returned a placeholder, use local heuristics
+        if not fixed_code:
+            fixed_code = fallback_fixed_code
+            summary = "AI Analysis bypassed or failed. Local heuristic corrections applied successfully."
+            highlighted_changes = fallback_changes or ["No vulnerabilities detected; preserved original contract structure."]
+            
         return FixContractResponse(
-            fixed_code=result["fix"],
-            summary=result["explanation"],
-            highlighted_changes=[f"Fixed {issue['name']}" for issue in issues] if issues else ["Optimized contract structure and safety patterns."]
+            fixed_code=fixed_code,
+            summary=summary,
+            highlighted_changes=highlighted_changes
         )
 
 
