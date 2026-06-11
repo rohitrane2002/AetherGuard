@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   alternates: {
-    canonical: "https://aetherguard.vercel.app/audit",
+    canonical: "https://aetherguard.ai/audit",
   },
 };
 

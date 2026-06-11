@@ -41,20 +41,20 @@ class Settings:
         self.stripe_price_id_enterprise = os.getenv("STRIPE_PRICE_ID_ENTERPRISE")
         self.stripe_success_url = os.getenv(
             "STRIPE_SUCCESS_URL",
-            "https://aetherguard.vercel.app/account?checkout=success",
+            "https://aetherguard.ai/account?checkout=success",
         )
         self.stripe_cancel_url = os.getenv(
             "STRIPE_CANCEL_URL",
-            "https://aetherguard.vercel.app/pricing?checkout=cancelled",
+            "https://aetherguard.ai/pricing?checkout=cancelled",
         )
         self.stripe_billing_portal_return_url = os.getenv(
             "STRIPE_BILLING_PORTAL_RETURN_URL",
-            "https://aetherguard.vercel.app/account",
+            "https://aetherguard.ai/account",
         )
         self.openai_api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
         self.ai_model = os.getenv("AI_MODEL", "meta-llama/llama-3.2-3b-instruct:free")
         self.ai_base_url = os.getenv("AI_BASE_URL", "https://openrouter.ai/api/v1")
-        self.ai_app_url = os.getenv("AI_APP_URL", "https://aetherguard.vercel.app")
+        self.ai_app_url = os.getenv("AI_APP_URL", "https://aetherguard.ai")
         self.ai_app_name = os.getenv("AI_APP_NAME", "AetherGuard")
         self.ai_system_prompt = os.getenv(
             "AI_SYSTEM_PROMPT",
@@ -72,7 +72,7 @@ class Settings:
         self.google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
         self.github_client_id = os.getenv("GITHUB_CLIENT_ID", "")
         self.github_client_secret = os.getenv("GITHUB_CLIENT_SECRET", "")
-        self.frontend_url = os.getenv("FRONTEND_URL", "https://aetherguard.vercel.app")
+        self.frontend_url = os.getenv("FRONTEND_URL", "https://aetherguard.ai")
         self.backend_url = os.getenv("BACKEND_URL", "https://aetherguard-api.onrender.com")
 
     @staticmethod

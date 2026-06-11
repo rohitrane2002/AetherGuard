@@ -117,6 +117,11 @@ def ensure_runtime_schema_compatibility() -> None:
             if column_name not in existing_columns:
                 connection.execute(text(f"ALTER TABLE users ADD COLUMN {column_name} {column_sql}"))
 
+        if "analysis_logs" in inspector.get_table_names():
+            existing_log_columns = {column["name"] for column in inspector.get_columns("analysis_logs")}
+            if "results_json" not in existing_log_columns:
+                connection.execute(text("ALTER TABLE analysis_logs ADD COLUMN results_json TEXT"))
+
 
 def get_db():
     db = SessionLocal()

@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/admin/", "/dashboard/", "/account/"],
       },
     ],
-    sitemap: "https://aetherguard.vercel.app/sitemap.xml",
+    sitemap: "https://aetherguard.ai/sitemap.xml",
   };
 }

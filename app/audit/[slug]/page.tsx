@@ -39,7 +39,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       description: page.metaDescription,
     },
     alternates: {
-      canonical: `https://aetherguard.vercel.app/audit/${page.slug}`,
+      canonical: `https://aetherguard.ai/audit/${page.slug}`,
     },
   };
 }
@@ -67,7 +67,7 @@ function ArticleJsonLd({ page }: { page: NonNullable<ReturnType<typeof getPageBy
     author: { "@type": "Organization", name: "AetherGuard" },
     publisher: { "@type": "Organization", name: "AetherGuard" },
     keywords: page.keywords.join(", "),
-    mainEntityOfPage: `https://aetherguard.vercel.app/audit/${page.slug}`,
+    mainEntityOfPage: `https://aetherguard.ai/audit/${page.slug}`,
   };
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
 }

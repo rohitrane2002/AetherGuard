@@ -2,7 +2,7 @@ import { ALL_SEO_PAGES } from "./lib/seo/keywords";
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://aetherguard.vercel.app";
+  const baseUrl = "https://aetherguard.ai";
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1.0 },

@@ -32,13 +32,13 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRICE_ID_FREE=price_...
 STRIPE_PRICE_ID_PRO=price_...
 STRIPE_PRICE_ID_ENTERPRISE=price_...
-STRIPE_SUCCESS_URL=https://aetherguard.vercel.app/account?checkout=success
-STRIPE_CANCEL_URL=https://aetherguard.vercel.app/pricing?checkout=cancelled
-STRIPE_BILLING_PORTAL_RETURN_URL=https://aetherguard.vercel.app/account
+STRIPE_SUCCESS_URL=https://aetherguard.ai/account?checkout=success
+STRIPE_CANCEL_URL=https://aetherguard.ai/pricing?checkout=cancelled
+STRIPE_BILLING_PORTAL_RETURN_URL=https://aetherguard.ai/account
 OPENROUTER_API_KEY=sk-or-v1-...
 AI_MODEL=anthropic/claude-sonnet-4-6
 AI_BASE_URL=https://openrouter.ai/api/v1
-AI_APP_URL=https://aetherguard.vercel.app
+AI_APP_URL=https://aetherguard.ai
 AI_APP_NAME=AetherGuard
 MAX_SOLIDITY_CHARS=50000
 USER_RATE_LIMIT_PER_MINUTE=30

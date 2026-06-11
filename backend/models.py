@@ -76,6 +76,7 @@ class AnalysisLog(Base):
     prob_vulnerable: Mapped[float] = mapped_column(Float, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, server_default="0")
     model_source: Mapped[str] = mapped_column(Text, nullable=False)
+    results_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

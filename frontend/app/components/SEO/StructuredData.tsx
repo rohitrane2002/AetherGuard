@@ -5,8 +5,8 @@ export default function StructuredData() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "AetherGuard",
-    "url": "https://aetherguard.vercel.app",
-    "logo": "https://aetherguard.vercel.app/logo.png",
+    "url": "https://aetherguard.ai",
+    "logo": "https://aetherguard.ai/logo.png",
     "sameAs": [
       "https://x.com/aetherguardos?s=21",
       "https://github.com/AetherGuard"
@@ -38,11 +38,11 @@ export default function StructuredData() {
     "@type": "WebSite",
     "name": "AetherGuard",
     "alternateName": "AetherGuard AI",
-    "url": "https://aetherguard.vercel.app",
+    "url": "https://aetherguard.ai",
     "description": "AI-native smart contract security platform for Solidity and Web3 protocols. Detect vulnerabilities, analyze contracts, and secure deployments with advanced AI scanning.",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://aetherguard.vercel.app/analyze?q={search_term_string}",
+      "target": "https://aetherguard.ai/analyze?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };

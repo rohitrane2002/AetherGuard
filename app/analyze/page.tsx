@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   alternates: {
-    canonical: "https://aetherguard.vercel.app/analyze",
+    canonical: "https://aetherguard.ai/analyze",
   },
 };
 

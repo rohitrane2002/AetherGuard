@@ -4,7 +4,7 @@ import StructuredData from "./components/SEO/StructuredData";
 
 export const metadata = {
   applicationName: "AetherGuard",
-  metadataBase: new URL("https://aetherguard.vercel.app"),
+  metadataBase: new URL("https://aetherguard.ai"),
   title: "AetherGuard — AI Smart Contract Security Platform",
   description: "AI-native smart contract security platform for Solidity and Web3 protocols. Detect vulnerabilities, analyze contracts, and secure deployments with advanced AI scanning.",
   verification: {
@@ -20,7 +20,7 @@ export const metadata = {
     "blockchain audit",
     "defi security",
   ],
-  authors: [{ name: "AetherGuard Team", url: "https://aetherguard.vercel.app" }],
+  authors: [{ name: "AetherGuard Team", url: "https://aetherguard.ai" }],
   creator: "AetherGuard",
   publisher: "AetherGuard",
   category: "security",
@@ -41,7 +41,7 @@ export const metadata = {
   openGraph: {
     title: "AetherGuard — AI Smart Contract Security Platform",
     description: "AI-native smart contract security platform for Solidity and Web3 protocols. Detect vulnerabilities, analyze contracts, and secure deployments with advanced AI scanning.",
-    url: "https://aetherguard.vercel.app",
+    url: "https://aetherguard.ai",
     siteName: "AetherGuard",
     images: [
       {
@@ -73,7 +73,7 @@ export const metadata = {
     },
   },
   alternates: {
-    canonical: "https://aetherguard.vercel.app",
+    canonical: "https://aetherguard.ai",
   },
 };
 

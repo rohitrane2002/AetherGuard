@@ -30,7 +30,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       siteName: "AetherGuard",
     },
     alternates: {
-      canonical: `https://aetherguard.vercel.app/tools/${page.slug}`,
+      canonical: `https://aetherguard.ai/tools/${page.slug}`,
     },
   };
 }
@@ -44,7 +44,7 @@ function ToolJsonLd({ page }: { page: NonNullable<ReturnType<typeof getPageBySlu
     "@type": "WebApplication",
     name: page.h1,
     description: page.metaDescription,
-    url: `https://aetherguard.vercel.app/tools/${page.slug}`,
+    url: `https://aetherguard.ai/tools/${page.slug}`,
     applicationCategory: "SecurityApplication",
     operatingSystem: "All",
     browserRequirements: "Requires JavaScript. Requires HTML5.",

@@ -202,22 +202,9 @@ export default function AnalyzePageClient() {
     }
   };
 
-  const downloadReport = async () => {
+  const downloadReport = () => {
     if (!result?.log_id) return;
-    try {
-      const response = await authFetch(`${API_BASE_URL}/reports/${result.log_id}/download`);
-      if (response.ok) {
-        const data = await response.json();
-        const blob = new Blob([data.content], { type: "text/markdown" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = data.filename;
-        a.click();
-      }
-    } catch (err) {
-      toast.error("Failed to download report");
-    }
+    window.open(`/reports/${result.log_id}`, "_blank");
   };
 
   const streamCopilot = async (prompt: string) => {

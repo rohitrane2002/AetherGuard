@@ -11,6 +11,7 @@ from auth import (
     create_access_token,
     create_refresh_token,
     get_current_user,
+    get_optional_current_user,
     get_user_from_refresh_token,
     revoke_refresh_token,
     hash_password,
@@ -846,6 +847,7 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
             prob_vulnerable=model_result["prob_vulnerable"],
             confidence=final_result["confidence"],
             model_source=model_result["model_source"],
+            results_json=json.dumps(final_result),
         )
         db.add(analysis_log)
         db.commit()
@@ -1139,6 +1141,63 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         usage_after = increment_usage(db, user)
         result["remaining_today"] = usage_after["remaining_today"]
         return result
+
+    @router.get("/reports/{log_id}")
+    async def get_report_details(
+        log_id: int,
+        current_user: Optional[User] = Depends(get_optional_current_user),
+        db: Session = Depends(get_db)
+    ):
+        import json
+        log = db.execute(
+            select(AnalysisLog).where(AnalysisLog.id == log_id)
+        ).scalar_one_or_none()
+
+        if not log:
+            raise HTTPException(status_code=404, detail="Analysis log not found")
+
+        is_owner = current_user and log.user_id == current_user.id
+        is_shared = False
+        shared_entry = db.execute(
+            select(SharedReport).where(SharedReport.analysis_log_id == log_id)
+        ).scalar_one_or_none()
+        if shared_entry:
+            is_shared = True
+
+        if not is_owner and not is_shared:
+            raise HTTPException(status_code=403, detail="Access to this report is restricted")
+
+        results = None
+        if log.results_json:
+            try:
+                results = json.loads(log.results_json)
+            except Exception:
+                pass
+
+        if not results:
+            results = {
+                "score": int(log.prob_vulnerable * 100),
+                "severity": "high" if log.prob_vulnerable > 0.7 else "medium" if log.prob_vulnerable > 0.3 else "low",
+                "summary": "Automated security audit summary based on analysis history.",
+                "findings": [],
+                "issues": [],
+                "fix_suggestions": ["Review contract state transitions", "Implement access control"],
+                "fix": "// Re-run analysis to generate fix code.",
+                "safe_patterns": [],
+                "prediction": log.prediction,
+                "prob_secure": log.prob_secure,
+                "prob_vulnerable": log.prob_vulnerable,
+                "confidence": log.confidence,
+                "model_source": log.model_source,
+                "log_id": log.id,
+                "risk_score": int(log.prob_vulnerable * 100),
+            }
+
+        return {
+            "source_code": log.source_code,
+            "created_at": log.created_at,
+            "results": results
+        }
 
     @router.get("/reports/{log_id}/download")
     async def download_report(
