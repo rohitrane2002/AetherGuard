@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
@@ -1148,7 +1149,6 @@ def build_router(get_analyzer, get_analyzer_init_error=lambda: None):
         current_user: Optional[User] = Depends(get_optional_current_user),
         db: Session = Depends(get_db)
     ):
-        import json
         logger.info(f"[Report Retrieval] Request for log_id={log_id}, current_user={current_user.email if current_user else 'None'}")
         
         log = db.execute(
